@@ -1,6 +1,6 @@
 const Product = {
-    id: 0,
-    title: "",
-    price: "",
     brand: "",
+    id: 0,
+    price: "",
+    product: "", 
 }

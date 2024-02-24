@@ -580,44 +580,109 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 
 },{}],"j6eqU":[function(require,module,exports) {
 var _api = require("./api/api");
-window.addEventListener("load", ()=>{
-    (0, _api.getData)();
+var _apiCommands = require("./api/api_commands");
+window.addEventListener("load", async ()=>{
+    const responseIDs = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getIDs({
+        offset: 0,
+        limit: 10
+    }));
+    console.log("IDs ---------------------");
+    console.log(responseIDs.result);
+    const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
+        ids: [
+            ...responseIDs.result
+        ]
+    }));
+    console.log("Products ---------------------");
+    console.log(products.result);
+    const fields = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getFields({
+        field: "brand",
+        offset: 0,
+        limit: 100
+    }));
+    console.log("Fields ---------------------");
+    console.log(fields.result);
+    const filter = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).filter({
+        "price": 17500.00
+    }));
+    console.log("Filter Price 17500.00 ---------------------");
+    console.log(filter.result);
 });
 
-},{"./api/api":"e5BwA"}],"e5BwA":[function(require,module,exports) {
+},{"./api/api":"e5BwA","./api/api_commands":"hUXUM"}],"e5BwA":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "getData", ()=>getData);
-var _md5Js = require("crypto-js/md5.js");
-var _md5JsDefault = parcelHelpers.interopDefault(_md5Js);
+parcelHelpers.export(exports, "getDataFromApi", ()=>getDataFromApi);
+var _utils = require("src/utils/utils");
 var _appstate = require("../appstate/appstate");
-async function getData() {
-    const date = new Date();
-    const partMD5 = date.toISOString().slice(0, 10).replaceAll("-", "");
-    const md5 = (0, _md5JsDefault.default)(`${(0, _appstate.APPSTATE).password}_${partMD5}`).toString();
-    const filter = {
-        "action": "filter",
-        "params": {
-            "price": 17500.0
-        }
-    };
+async function getDataFromApi(command) {
     const result = await fetch((0, _appstate.APPSTATE).apiURL, {
         method: "POST",
         mode: "cors",
         cache: "no-cache",
         credentials: "same-origin",
         headers: {
-            "X-Auth": md5,
+            "X-Auth": (0, _utils.md5)(),
             "Content-Type": "application/json"
         },
-        body: JSON.stringify(filter)
+        body: JSON.stringify(command)
     });
-    result.json().then((data)=>{
-        console.log(data);
-    });
+    return result.json();
 }
 
-},{"crypto-js/md5.js":"1qHxz","../appstate/appstate":"eMp2h","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"1qHxz":[function(require,module,exports) {
+},{"../appstate/appstate":"eMp2h","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","src/utils/utils":"ea5wt"}],"eMp2h":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "APPSTATE", ()=>APPSTATE);
+const APPSTATE = {
+    apiURL: "https://api.valantis.store:41000/",
+    password: "Valantis"
+};
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gkKU3":[function(require,module,exports) {
+exports.interopDefault = function(a) {
+    return a && a.__esModule ? a : {
+        default: a
+    };
+};
+exports.defineInteropFlag = function(a) {
+    Object.defineProperty(a, "__esModule", {
+        value: true
+    });
+};
+exports.exportAll = function(source, dest) {
+    Object.keys(source).forEach(function(key) {
+        if (key === "default" || key === "__esModule" || Object.prototype.hasOwnProperty.call(dest, key)) return;
+        Object.defineProperty(dest, key, {
+            enumerable: true,
+            get: function() {
+                return source[key];
+            }
+        });
+    });
+    return dest;
+};
+exports.export = function(dest, destName, get) {
+    Object.defineProperty(dest, destName, {
+        enumerable: true,
+        get: get
+    });
+};
+
+},{}],"ea5wt":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "md5", ()=>md5);
+var _md5Js = require("crypto-js/md5.js");
+var _md5JsDefault = parcelHelpers.interopDefault(_md5Js);
+var _appstate = require("src/scripts/appstate/appstate");
+function md5() {
+    const date = new Date();
+    const partMD5 = date.toISOString().slice(0, 10).replaceAll("-", "");
+    return (0, _md5JsDefault.default)(`${(0, _appstate.APPSTATE).password}_${partMD5}`).toString();
+}
+
+},{"crypto-js/md5.js":"1qHxz","src/scripts/appstate/appstate":"eMp2h","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"1qHxz":[function(require,module,exports) {
 (function(root, factory) {
     // CommonJS
     module.exports = exports = factory(require("df297d5f1a7605f5"));
@@ -1443,45 +1508,60 @@ var global = arguments[3];
 },{"b7760e5f0b7216d4":"jhUEF"}],"jhUEF":[function(require,module,exports) {
 "use strict";
 
-},{}],"eMp2h":[function(require,module,exports) {
+},{}],"hUXUM":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "APPSTATE", ()=>APPSTATE);
-const APPSTATE = {
-    apiURL: "https://api.valantis.store:41000/",
-    password: "Valantis"
+parcelHelpers.export(exports, "APICOMMANDS", ()=>APICOMMANDS);
+const APICOMMANDS = {
+    filter: filter,
+    getIDs: getIDs,
+    getItems: getItems,
+    getFields: getFields
 };
+//----- Функции запросов к API ---------------------------------------------------
+function filter(params) {
+    /*  возвращает упорядоченный список идентификаторов товаров,
+        соответствующих заданному значению.
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gkKU3":[function(require,module,exports) {
-exports.interopDefault = function(a) {
-    return a && a.__esModule ? a : {
-        default: a
+        В качестве параметра может использоваться любое поле возвращаемое
+        методом get_fields без параметров. В качестве значения должен
+        использоваться тип данных соответствующий полю. Для поля product
+        будет проверяться вхождение параметра в строку.
+        Для остальных полей проверяется строгое соответствие.
+    */ return {
+        "action": "filter",
+        "params": params
     };
-};
-exports.defineInteropFlag = function(a) {
-    Object.defineProperty(a, "__esModule", {
-        value: true
-    });
-};
-exports.exportAll = function(source, dest) {
-    Object.keys(source).forEach(function(key) {
-        if (key === "default" || key === "__esModule" || Object.prototype.hasOwnProperty.call(dest, key)) return;
-        Object.defineProperty(dest, key, {
-            enumerable: true,
-            get: function() {
-                return source[key];
-            }
-        });
-    });
-    return dest;
-};
-exports.export = function(dest, destName, get) {
-    Object.defineProperty(dest, destName, {
-        enumerable: true,
-        get: get
-    });
-};
+}
+function getIDs(params) {
+    /*  метод возвращает упорядоченный список идентификаторов товаров
+        <offset: number> смещение относительно начала списка
+        <limit: number> желаемое число возвращаемых записей
+    */ return {
+        "action": "get_ids",
+        "params": params
+    };
+}
+function getItems(params) {
+    /*  возвращает упорядоченный список товаров со всеми характеристиками,
+        если переданы идентификаторы товаров.
+        <ids:Array<string>> идентификаторы товаров, которые будут возвращены.
+    */ return {
+        "action": "get_items",
+        "params": params
+    };
+}
+function getFields(params) {
+    /*  без параметров возвращает упорядоченный список имеющихся полей товаров
+        <field: string> действительное название поля товара
+        <offset: number> смещение относительно начала списка
+        <limit: number> желаемое число возвращаемых записей
+    */ return {
+        "action": "get_fields",
+        "params": params
+    };
+}
 
-},{}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")
 
 //# sourceMappingURL=index.482d1c68.js.map
