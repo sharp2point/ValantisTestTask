@@ -1,3 +1,6 @@
+import { getData } from "./api/api";
+
+
 window.addEventListener('load', () => {
-    console.log("Script Append");
+    getData();
 });
