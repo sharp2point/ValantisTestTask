@@ -582,32 +582,114 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 var _api = require("./api/api");
 var _apiCommands = require("./api/api_commands");
 window.addEventListener("load", async ()=>{
-    const responseIDs = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getIDs({
-        offset: 0,
-        limit: 10
-    }));
-    console.log("IDs ---------------------");
-    console.log(responseIDs.result);
-    const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
-        ids: [
-            ...responseIDs.result
-        ]
-    }));
-    console.log("Products ---------------------");
-    console.log(products.result);
-    const fields = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getFields({
-        field: "brand",
-        offset: 0,
-        limit: 100
-    }));
-    console.log("Fields ---------------------");
-    console.log(fields.result);
-    const filter = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).filter({
-        "price": 17500.00
-    }));
-    console.log("Filter Price 17500.00 ---------------------");
-    console.log(filter.result);
+    initFilter();
+// const responseIDs = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 10 }));
+// console.log("IDs ---------------------");
+// console.log(responseIDs.result);
+// const products = await getDataFromApi(APICOMMANDS.getItems({ ids: [...responseIDs.result] }));
+// console.log("Products ---------------------");
+// console.log(products.result);
+// const fields = await getDataFromApi(APICOMMANDS.getFields({ field: "brand", offset: 0, limit: 100 }));
+// console.log("Fields ---------------------");
+// console.log(fields.result);
+// const filter = await getDataFromApi(APICOMMANDS.filter({ "price": 17500.00 }));
+// console.log("Filter Price 17500.00 ---------------------");
+// console.log(filter.result);
 });
+//Filter---------------
+function initFilter() {
+    const filterForm = document.querySelector("#filter-form");
+    if (filterForm && filterForm instanceof HTMLFormElement) filterForm.addEventListener("submit", async (e)=>{
+        e.preventDefault();
+        submitDebounce(filterForm);
+    });
+}
+/*
+    submitDebounce(filterForm: HTMLFormElement) - функция блокирует кнопку Submit на время запроса + 1сек
+*/ function submitDebounce(filterForm) {
+    const filterFormSubmit = document.querySelector("#filter-form>button[type=submit]");
+    filterFormSubmit.classList.add("inaccess");
+    onFormSubmit(filterForm).then((data)=>{
+        const no_dublicate_data = data.map((dt)=>clearDublicate(dt.result));
+        const ids_data = crossFilterData(no_dublicate_data);
+        return getProductsByIDs(ids_data);
+    }).then((data)=>{
+        console.log(data.result);
+        //---------------------------------------------//
+        blockedSubmitFilterForm(filterFormSubmit, 1000);
+    }).catch((err)=>{
+        console.log("Error: ", err);
+        blockedSubmitFilterForm(filterFormSubmit, 1000);
+    });
+}
+async function onFormSubmit(form) {
+    const results = new Array();
+    [
+        ...form.elements
+    ].forEach((input)=>{
+        if (input.value) {
+            const res = filteringData(input.name, input.value);
+            results.push(res);
+        }
+    });
+    return Promise.all(results);
+}
+async function filteringData(filterName, filterValue) {
+    let result;
+    switch(filterName){
+        case "product":
+            result = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).filter({
+                "product": filterValue
+            }));
+            break;
+        case "brand":
+            result = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).filter({
+                "brand": filterValue
+            }));
+            break;
+        case "price":
+            result = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).filter({
+                "price": parseFloat(filterValue)
+            }));
+            break;
+        default:
+            result = Promise.reject(()=>{
+                throw Error("Error: \u041E\u0448\u0438\u0431\u043A\u0430 \u0444\u0438\u043B\u044C\u0442\u0440\u0430\u0446\u0438\u0438");
+            });
+            break;
+    }
+    return result;
+}
+async function getProductsByIDs(ids) {
+    const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
+        ids: ids
+    }));
+    return products;
+}
+//-----------------------------------------------------------------
+function crossFilterData(arrays) {
+    if (arrays.length === 1) return arrays[0];
+    else if (arrays.length === 2) return crossTwoData(arrays[0], arrays[1]);
+    else if (arrays.length == 3) {
+        const tmp = crossTwoData(arrays[0], arrays[1]);
+        return crossTwoData(tmp, arrays[2]);
+    } else return [];
+}
+function crossTwoData(data1, data2) {
+    return data1.filter((el)=>data2.includes(el));
+}
+function blockedSubmitFilterForm(submitButton, timeout) {
+    setTimeout(()=>{
+        submitButton.classList.remove("inaccess");
+    }, timeout);
+}
+function clearDublicate(data) {
+    return [
+        ...new Set([
+            ...data
+        ])
+    ];
+}
 
 },{"./api/api":"e5BwA","./api/api_commands":"hUXUM"}],"e5BwA":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
@@ -630,46 +712,7 @@ async function getDataFromApi(command) {
     return result.json();
 }
 
-},{"../appstate/appstate":"eMp2h","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","src/utils/utils":"ea5wt"}],"eMp2h":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "APPSTATE", ()=>APPSTATE);
-const APPSTATE = {
-    apiURL: "https://api.valantis.store:41000/",
-    password: "Valantis"
-};
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gkKU3":[function(require,module,exports) {
-exports.interopDefault = function(a) {
-    return a && a.__esModule ? a : {
-        default: a
-    };
-};
-exports.defineInteropFlag = function(a) {
-    Object.defineProperty(a, "__esModule", {
-        value: true
-    });
-};
-exports.exportAll = function(source, dest) {
-    Object.keys(source).forEach(function(key) {
-        if (key === "default" || key === "__esModule" || Object.prototype.hasOwnProperty.call(dest, key)) return;
-        Object.defineProperty(dest, key, {
-            enumerable: true,
-            get: function() {
-                return source[key];
-            }
-        });
-    });
-    return dest;
-};
-exports.export = function(dest, destName, get) {
-    Object.defineProperty(dest, destName, {
-        enumerable: true,
-        get: get
-    });
-};
-
-},{}],"ea5wt":[function(require,module,exports) {
+},{"src/utils/utils":"ea5wt","../appstate/appstate":"eMp2h","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"ea5wt":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "md5", ()=>md5);
@@ -1507,6 +1550,45 @@ var global = arguments[3];
 
 },{"b7760e5f0b7216d4":"jhUEF"}],"jhUEF":[function(require,module,exports) {
 "use strict";
+
+},{}],"eMp2h":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "APPSTATE", ()=>APPSTATE);
+const APPSTATE = {
+    apiURL: "https://api.valantis.store:41000/",
+    password: "Valantis"
+};
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gkKU3":[function(require,module,exports) {
+exports.interopDefault = function(a) {
+    return a && a.__esModule ? a : {
+        default: a
+    };
+};
+exports.defineInteropFlag = function(a) {
+    Object.defineProperty(a, "__esModule", {
+        value: true
+    });
+};
+exports.exportAll = function(source, dest) {
+    Object.keys(source).forEach(function(key) {
+        if (key === "default" || key === "__esModule" || Object.prototype.hasOwnProperty.call(dest, key)) return;
+        Object.defineProperty(dest, key, {
+            enumerable: true,
+            get: function() {
+                return source[key];
+            }
+        });
+    });
+    return dest;
+};
+exports.export = function(dest, destName, get) {
+    Object.defineProperty(dest, destName, {
+        enumerable: true,
+        get: get
+    });
+};
 
 },{}],"hUXUM":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
