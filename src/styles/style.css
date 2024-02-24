@@ -1,10 +1,4 @@
-*{
-    margin:0;
-    padding:0;
-    box-sizing: border-box;
-}
-#app{
-    border:5px solid red;
-    width: 100vw;
-    height: 100vh;
-}
+@import url("./base.css");
+@import url("./filter.css");
+@import url("./utils.css");
+

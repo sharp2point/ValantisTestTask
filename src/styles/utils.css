@@ -1,0 +1,4 @@
+.inaccess{
+    pointer-events: none;
+    color:rgba(100,100,100,0.1);    
+}
