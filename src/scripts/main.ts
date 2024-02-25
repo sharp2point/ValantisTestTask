@@ -20,6 +20,8 @@ window.addEventListener('load', async () => {
     // console.log("Filter Price 17500.00 ---------------------");
     // console.log(filter.result);
 });
+//Data Products----------
+
 
 //Filter---------------
 
