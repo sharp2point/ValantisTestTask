@@ -579,10 +579,18 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 }
 
 },{}],"j6eqU":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 var _api = require("./api/api");
 var _apiCommands = require("./api/api_commands");
+var _page = require("./components/page/page");
+var _pageDefault = parcelHelpers.interopDefault(_page);
 window.addEventListener("load", async ()=>{
     initFilter();
+    getProductData().then((products)=>{
+        return productsPage(products);
+    }).then((page)=>{
+        appendPageToDocument(page);
+    });
 // const responseIDs = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 10 }));
 // console.log("IDs ---------------------");
 // console.log(responseIDs.result);
@@ -597,6 +605,28 @@ window.addEventListener("load", async ()=>{
 // console.log(filter.result);
 });
 //Data Products----------
+async function getProductData() {
+    const ids_raw = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getIDs({
+        offset: 0,
+        limit: 75
+    }));
+    const ids = clearDublicate(ids_raw.result);
+    const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
+        ids: ids
+    }));
+    return Promise.resolve(products.result);
+}
+async function productsPage(products) {
+    const page = new (0, _pageDefault.default)();
+    products.forEach((product)=>{
+        page.addProduct(product);
+    });
+    return page;
+}
+function appendPageToDocument(page) {
+    const pagePlace = document.querySelector(".app-page");
+    if (pagePlace) pagePlace.appendChild(page);
+}
 //Filter---------------
 function initFilter() {
     const filterForm = document.querySelector("#filter-form");
@@ -692,7 +722,7 @@ function clearDublicate(data) {
     ];
 }
 
-},{"./api/api":"e5BwA","./api/api_commands":"hUXUM"}],"e5BwA":[function(require,module,exports) {
+},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./components/page/page":"hCezX","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"e5BwA":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getDataFromApi", ()=>getDataFromApi);
@@ -1558,7 +1588,8 @@ parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "APPSTATE", ()=>APPSTATE);
 const APPSTATE = {
     apiURL: "https://api.valantis.store:41000/",
-    password: "Valantis"
+    password: "Valantis",
+    productsOnPage: 50
 };
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gkKU3":[function(require,module,exports) {
@@ -1643,6 +1674,117 @@ function getFields(params) {
         "action": "get_fields",
         "params": params
     };
+}
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hCezX":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _product = require("../product/product");
+var _productDefault = parcelHelpers.interopDefault(_product);
+class PageComponent extends HTMLElement {
+    _root;
+    constructor(){
+        super();
+        this._root = this.attachShadow({
+            mode: "open"
+        });
+        this._root.innerHTML = renderTemplate();
+        this.setAttribute("class", "page");
+    }
+    addProduct(product_data) {
+        const product = new (0, _productDefault.default)(product_data);
+        this._root.getRootNode().appendChild(product);
+    }
+}
+exports.default = PageComponent;
+if (!customElements.get("nice2jm-page-products")) customElements.define("nice2jm-page-products", PageComponent);
+//-----------------------------------------------
+function renderTemplate() {
+    const html = `
+        
+    `;
+    const css = `
+        <style>
+            :host{
+                display:flex;
+                flex-direction:column;
+                justify-content: start;
+                align-items:center;
+                gap:0.1rem;
+                background:rgb(100,100,100);
+                width:100%;
+                margin:1rem;
+                border:3px solid rgb(150,150,150);
+            }
+        </style>
+    `;
+    return `${html}${css}`;
+}
+
+},{"../product/product":"gAdVN","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gAdVN":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+class ProductComponent extends HTMLElement {
+    _root;
+    _product = null;
+    constructor(product){
+        super();
+        this._product = product;
+        this._root = this.attachShadow({
+            mode: "open"
+        });
+        this.setAttribute("class", "product-cmp");
+        this._root.innerHTML = renderTemplate(this._product);
+    }
+}
+exports.default = ProductComponent;
+if (!customElements.get("nice2jm-product")) customElements.define("nice2jm-product", ProductComponent);
+//-----------------------------------------------
+function renderTemplate(product) {
+    const html = `        
+        <span class="id">${product.id}</span>
+        <span class="brand">${product.brand}</span>
+        <span class="price">${product.price}</span>
+        <span class="product">${product.product}</span>
+    `;
+    const css = `
+        <style>
+            :host{
+                display:flex;
+                flex-direction:row;
+                justify-content:space-between;
+                align-items: center;
+                flex-wrap:nowrap;
+                width:95%;
+                min-height:40px;
+                font:600 1rem "Arial";
+                border-bottom:1px solid rgb(100,100,100);
+                background: rgb(50,50,50);
+            }
+            span{
+                padding-inline:1rem;
+                color: white;
+                overflow:hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                min-width:100px;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.id{
+                flex-basis:30%;                
+            }
+            span.brand{
+                flex-basis:5%;
+            }
+            span.price{
+                flex-basis:5%;
+            }
+            span.product{
+                flex-basis:60%;
+            }
+        </style>
+    `;
+    return `${html}${css}`;
 }
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")

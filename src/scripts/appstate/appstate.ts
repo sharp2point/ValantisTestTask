@@ -1,4 +1,5 @@
 export const APPSTATE = {
     apiURL: "https://api.valantis.store:41000/",
-    password: "Valantis"
+    password: "Valantis",
+    productsOnPage: 50,
 }

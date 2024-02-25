@@ -1,0 +1,6 @@
+.app-page{
+    display: flex;
+    justify-content: center;
+    align-items: start;
+    width:100%;
+}

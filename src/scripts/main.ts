@@ -1,9 +1,16 @@
 import { getDataFromApi } from "./api/api";
 import { APICOMMANDS } from "./api/api_commands";
+import PageComponent from "./components/page/page";
+import ProductComponent from "./components/product/product";
+import { Product } from "./types/app_types";
 
 window.addEventListener('load', async () => {
     initFilter();
-
+    getProductData().then((products) => {
+        return productsPage(products);
+    }).then((page) => {
+        appendPageToDocument(page);
+    });
     // const responseIDs = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 10 }));
     // console.log("IDs ---------------------");
     // console.log(responseIDs.result);
@@ -21,7 +28,25 @@ window.addEventListener('load', async () => {
     // console.log(filter.result);
 });
 //Data Products----------
-
+async function getProductData() {
+    const ids_raw = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 75 }));
+    const ids = clearDublicate(ids_raw.result);
+    const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids }));
+    return Promise.resolve(products.result);
+}
+async function productsPage(products: Array<Product>) {
+    const page = new PageComponent();
+    products.forEach((product) => {
+        page.addProduct(product);
+    });
+    return page;
+}
+function appendPageToDocument(page: PageComponent) {
+    const pagePlace = document.querySelector(".app-page");
+    if (pagePlace) {
+        pagePlace.appendChild(page);
+    }
+}
 
 //Filter---------------
 
@@ -43,7 +68,7 @@ function submitDebounce(filterForm: HTMLFormElement) {
     filterFormSubmit.classList.add("inaccess");
     onFormSubmit(filterForm).then((data) => {
         const no_dublicate_data = data.map((dt) => clearDublicate(dt.result));
-        const ids_data = crossFilterData(no_dublicate_data);        
+        const ids_data = crossFilterData(no_dublicate_data);
         return getProductsByIDs(ids_data);
     }).then((data) => {
         console.log(data.result)
