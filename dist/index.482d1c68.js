@@ -584,12 +584,20 @@ var _api = require("./api/api");
 var _apiCommands = require("./api/api_commands");
 var _page = require("./components/page/page");
 var _pageDefault = parcelHelpers.interopDefault(_page);
+var _pageManager = require("./page_manager");
+var _pageManagerDefault = parcelHelpers.interopDefault(_pageManager);
 window.addEventListener("load", async ()=>{
     initFilter();
-    getProductData().then((products)=>{
-        return productsPage(products);
-    }).then((page)=>{
-        appendPageToDocument(page);
+    const pageManager = new (0, _pageManagerDefault.default)();
+    getProductData({
+        offset: 0,
+        limit: 10
+    }).then((products)=>{
+        return fillPage(products, pageManager);
+    }).then((pageManager)=>{
+        appendPageToDocument(pageManager.getLastPage());
+    }).catch((err)=>{
+        console.log("Get Product Error: ", err);
     });
 // const responseIDs = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 10 }));
 // console.log("IDs ---------------------");
@@ -605,10 +613,10 @@ window.addEventListener("load", async ()=>{
 // console.log(filter.result);
 });
 //Data Products----------
-async function getProductData() {
+async function getProductData(options) {
     const ids_raw = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getIDs({
-        offset: 0,
-        limit: 75
+        offset: options.offset,
+        limit: options.limit
     }));
     const ids = clearDublicate(ids_raw.result);
     const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
@@ -616,12 +624,21 @@ async function getProductData() {
     }));
     return Promise.resolve(products.result);
 }
-async function productsPage(products) {
-    const page = new (0, _pageDefault.default)();
-    products.forEach((product)=>{
-        page.addProduct(product);
-    });
-    return page;
+function fillPage(products, pageManager) {
+    const page = new (0, _pageDefault.default)(1);
+    for(let i = 0; i < products.length; i++){
+        const result = page.addProduct(products[i]);
+        if (i === products.length - 1) {
+            pageManager.addPage(page);
+            break;
+        }
+        if (!result) {
+            pageManager.addPage(page);
+            fillPage(products.slice(i, products.length - 1), pageManager);
+            break;
+        }
+    }
+    return pageManager;
 }
 function appendPageToDocument(page) {
     const pagePlace = document.querySelector(".app-page");
@@ -722,7 +739,7 @@ function clearDublicate(data) {
     ];
 }
 
-},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./components/page/page":"hCezX","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"e5BwA":[function(require,module,exports) {
+},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./components/page/page":"hCezX","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./page_manager":"j7Bvv"}],"e5BwA":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getDataFromApi", ()=>getDataFromApi);
@@ -1683,8 +1700,13 @@ var _product = require("../product/product");
 var _productDefault = parcelHelpers.interopDefault(_product);
 class PageComponent extends HTMLElement {
     _root;
-    constructor(){
+    _capasity = 50;
+    _cachProducts = new Array();
+    _id = 0;
+    _page_id = 0;
+    constructor(id){
         super();
+        this._id = id;
         this._root = this.attachShadow({
             mode: "open"
         });
@@ -1692,8 +1714,17 @@ class PageComponent extends HTMLElement {
         this.setAttribute("class", "page");
     }
     addProduct(product_data) {
-        const product = new (0, _productDefault.default)(product_data);
-        this._root.getRootNode().appendChild(product);
+        if (this._capasity > 0) {
+            this._cachProducts.push(product_data);
+            const product = new (0, _productDefault.default)(this._page_id, product_data);
+            this._root.getRootNode().appendChild(product);
+            this._capasity -= 1;
+            this._page_id += 1;
+            return true;
+        } else return false;
+    }
+    get capasity() {
+        return this._capasity;
     }
 }
 exports.default = PageComponent;
@@ -1727,22 +1758,25 @@ parcelHelpers.defineInteropFlag(exports);
 class ProductComponent extends HTMLElement {
     _root;
     _product = null;
-    constructor(product){
+    _id = 0;
+    constructor(id, product){
         super();
+        this._id = id;
         this._product = product;
         this._root = this.attachShadow({
             mode: "open"
         });
         this.setAttribute("class", "product-cmp");
-        this._root.innerHTML = renderTemplate(this._product);
+        this._root.innerHTML = renderTemplate(this._id, this._product);
     }
 }
 exports.default = ProductComponent;
 if (!customElements.get("nice2jm-product")) customElements.define("nice2jm-product", ProductComponent);
 //-----------------------------------------------
-function renderTemplate(product) {
-    const html = `        
-        <span class="id">${product.id}</span>
+function renderTemplate(id, product) {
+    const html = `   
+        <span class="id">${id}</span>     
+        <span class="product-id">${product.id}</span>
         <span class="brand">${product.brand}</span>
         <span class="price">${product.price}</span>
         <span class="product">${product.product}</span>
@@ -1766,12 +1800,14 @@ function renderTemplate(product) {
                 color: white;
                 overflow:hidden;
                 white-space: nowrap;
-                text-overflow: ellipsis;
-                min-width:100px;
+                text-overflow: ellipsis;                
                 border-right: 1px solid rgb(100,100,100);
             }
             span.id{
-                flex-basis:30%;                
+                flex-basis:2%;
+            }
+            span.product-id{
+                flex-basis:25%;                
             }
             span.brand{
                 flex-basis:5%;
@@ -1786,6 +1822,47 @@ function renderTemplate(product) {
     `;
     return `${html}${css}`;
 }
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"j7Bvv":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+class PageManager {
+    _pages = new Array();
+    _pageIndex = 0;
+    _cursor = 0;
+    get pagesCount() {
+        return this._pageIndex;
+    }
+    addPage(page) {
+        this._pages.push(page);
+        this._pageIndex += 1;
+    }
+    getPageByIndex = (index)=>{
+        this._cursor = index;
+        return this._pages[index];
+    };
+    getFirstPage = ()=>{
+        this._cursor = 0;
+        return this._pages[0];
+    };
+    getLastPage = ()=>{
+        this._cursor = this._pages.length - 1;
+        return this._pages[this._pages.length - 1];
+    };
+    nextPage = ()=>{
+        if (this._cursor <= this._pages.length - 1) {
+            this._cursor += 1;
+            return this.getPageByIndex(this._cursor);
+        } else return this.getLastPage();
+    };
+    previewPage = ()=>{
+        if (this._cursor >= 0) {
+            this._cursor -= 1;
+            return this.getPageByIndex(this._cursor);
+        } else return this.getFirstPage();
+    };
+}
+exports.default = PageManager;
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")
 

@@ -1,15 +1,18 @@
 import { getDataFromApi } from "./api/api";
 import { APICOMMANDS } from "./api/api_commands";
 import PageComponent from "./components/page/page";
-import ProductComponent from "./components/product/product";
+import PageManager from "./page_manager";
 import { Product } from "./types/app_types";
 
 window.addEventListener('load', async () => {
     initFilter();
-    getProductData().then((products) => {
-        return productsPage(products);
-    }).then((page) => {
-        appendPageToDocument(page);
+    const pageManager = new PageManager();
+    getProductData({ offset: 0, limit: 10 }).then((products) => {
+        return fillPage(products, pageManager);
+    }).then((pageManager) => {
+        appendPageToDocument(pageManager.getLastPage());
+    }).catch((err) => {
+        console.log("Get Product Error: ", err);
     });
     // const responseIDs = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 10 }));
     // console.log("IDs ---------------------");
@@ -28,19 +31,30 @@ window.addEventListener('load', async () => {
     // console.log(filter.result);
 });
 //Data Products----------
-async function getProductData() {
-    const ids_raw = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 75 }));
+async function getProductData(options: { offset: number, limit: number }) {
+    const ids_raw = await getDataFromApi(APICOMMANDS.getIDs({ offset: options.offset, limit: options.limit }));
     const ids = clearDublicate(ids_raw.result);
     const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids }));
     return Promise.resolve(products.result);
 }
-async function productsPage(products: Array<Product>) {
-    const page = new PageComponent();
-    products.forEach((product) => {
-        page.addProduct(product);
-    });
-    return page;
+
+function fillPage(products: Array<Product>, pageManager: PageManager) {
+    const page = new PageComponent(1);
+    for (let i = 0; i < products.length; i++) {
+        const result = page.addProduct(products[i]);
+        if (i === products.length - 1) {
+            pageManager.addPage(page);
+            break;
+        }
+        if (!result) {
+            pageManager.addPage(page);
+            fillPage(products.slice(i, products.length - 1), pageManager)
+            break;
+        }
+    }
+    return pageManager;
 }
+
 function appendPageToDocument(page: PageComponent) {
     const pagePlace = document.querySelector(".app-page");
     if (pagePlace) {

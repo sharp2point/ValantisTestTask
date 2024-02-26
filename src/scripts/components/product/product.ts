@@ -3,12 +3,15 @@ import { Product } from "src/scripts/types/app_types";
 export default class ProductComponent extends HTMLElement {
     _root: ShadowRoot;
     _product: Product | null = null;
-    constructor(product: Product) {
+    _id = 0;
+
+    constructor(id: number, product: Product) {
         super();
+        this._id = id;
         this._product = product;
         this._root = this.attachShadow({ mode: 'open' });
         this.setAttribute("class", "product-cmp");
-        this._root.innerHTML = renderTemplate(this._product!);
+        this._root.innerHTML = renderTemplate(this._id, this._product!);
     }
 }
 
@@ -16,9 +19,10 @@ if (!customElements.get("nice2jm-product")) {
     customElements.define("nice2jm-product", ProductComponent);
 }
 //-----------------------------------------------
-function renderTemplate(product: Product) {
-    const html = `        
-        <span class="id">${product.id}</span>
+function renderTemplate(id: number, product: Product) {
+    const html = `   
+        <span class="id">${id}</span>     
+        <span class="product-id">${product.id}</span>
         <span class="brand">${product.brand}</span>
         <span class="price">${product.price}</span>
         <span class="product">${product.product}</span>
@@ -43,12 +47,14 @@ function renderTemplate(product: Product) {
                 color: white;
                 overflow:hidden;
                 white-space: nowrap;
-                text-overflow: ellipsis;
-                min-width:100px;
+                text-overflow: ellipsis;                
                 border-right: 1px solid rgb(100,100,100);
             }
             span.id{
-                flex-basis:30%;                
+                flex-basis:2%;
+            }
+            span.product-id{
+                flex-basis:25%;                
             }
             span.brand{
                 flex-basis:5%;
