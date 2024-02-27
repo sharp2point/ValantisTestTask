@@ -1,17 +1,17 @@
 import { Product } from "src/scripts/types/app_types";
 
 export default class ProductComponent extends HTMLElement {
-    _root: ShadowRoot;
-    _product: Product | null = null;
-    _id = 0;
+    private root: ShadowRoot;
+    private product: Product | null = null;
+    private _id = 0;
 
     constructor(id: number, product: Product) {
         super();
         this._id = id;
-        this._product = product;
-        this._root = this.attachShadow({ mode: 'open' });
+        this.product = product;
+        this.root = this.attachShadow({ mode: 'open' });
         this.setAttribute("class", "product-cmp");
-        this._root.innerHTML = renderTemplate(this._id, this._product!);
+        this.root.innerHTML = renderTemplate(this._id, this.product!);
     }
 }
 

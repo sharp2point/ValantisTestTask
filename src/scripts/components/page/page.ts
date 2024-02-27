@@ -2,26 +2,26 @@ import { Product } from "src/scripts/types/app_types";
 import ProductComponent from "../product/product";
 
 export default class PageComponent extends HTMLElement {
-    _root: ShadowRoot;
-    _capasity = 50;
-    _cachProducts: Array<Product> = new Array<Product>();
-    _id = 0;
-    _page_id = 0;
+    private root: ShadowRoot;
+    private _capasity = 50;
+    private cachProducts: Array<Product> = new Array<Product>();
+    private _id = 0;
+    private page_id = 0;
 
     constructor(id: number) {
         super();
         this._id = id;
-        this._root = this.attachShadow({ mode: 'open' });
-        this._root.innerHTML = renderTemplate();
+        this.root = this.attachShadow({ mode: 'open' });
+        this.root.innerHTML = renderTemplate();
         this.setAttribute("class", "page");
     }
     addProduct(product_data: Product) {
-        if (this._capasity > 0) {
-            this._cachProducts.push(product_data);
-            const product = new ProductComponent(this._page_id,product_data);
-            this._root.getRootNode().appendChild(product);
+        if (this.capasity > 0) {
+            this.cachProducts.push(product_data);
+            const product = new ProductComponent(this.page_id,product_data);
+            this.root.getRootNode().appendChild(product);
             this._capasity -= 1;
-            this._page_id += 1;
+            this.page_id += 1;
             return true;
         } else {
             return false;

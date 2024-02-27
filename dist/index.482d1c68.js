@@ -584,16 +584,20 @@ var _api = require("./api/api");
 var _apiCommands = require("./api/api_commands");
 var _page = require("./components/page/page");
 var _pageDefault = parcelHelpers.interopDefault(_page);
+var _paginator = require("./components/paginator/paginator");
+var _paginatorDefault = parcelHelpers.interopDefault(_paginator);
 var _pageManager = require("./page_manager");
 var _pageManagerDefault = parcelHelpers.interopDefault(_pageManager);
 window.addEventListener("load", async ()=>{
     initFilter();
     const pageManager = new (0, _pageManagerDefault.default)();
+    const upPaginator = new (0, _paginatorDefault.default)(pageManager);
+    upPaginator.appendToDOM(document.querySelector(".paginator-place"));
     getProductData({
         offset: 0,
         limit: 10
     }).then((products)=>{
-        return fillPage(products, pageManager);
+        return fillPage(clearDublicateProduct(products), pageManager);
     }).then((pageManager)=>{
         appendPageToDocument(pageManager.getLastPage());
     }).catch((err)=>{
@@ -618,7 +622,7 @@ async function getProductData(options) {
         offset: options.offset,
         limit: options.limit
     }));
-    const ids = clearDublicate(ids_raw.result);
+    const ids = clearDublicateID(ids_raw.result);
     const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
         ids: ids
     }));
@@ -658,8 +662,7 @@ function initFilter() {
     const filterFormSubmit = document.querySelector("#filter-form>button[type=submit]");
     filterFormSubmit.classList.add("inaccess");
     onFormSubmit(filterForm).then((data)=>{
-        const no_dublicate_data = data.map((dt)=>clearDublicate(dt.result));
-        const ids_data = crossFilterData(no_dublicate_data);
+        const ids_data = crossFilterData(data);
         return getProductsByIDs(ids_data);
     }).then((data)=>{
         console.log(data.result);
@@ -731,15 +734,24 @@ function blockedSubmitFilterForm(submitButton, timeout) {
         submitButton.classList.remove("inaccess");
     }, timeout);
 }
-function clearDublicate(data) {
+function clearDublicateID(data) {
     return [
         ...new Set([
             ...data
         ])
     ];
 }
+function clearDublicateProduct(data) {
+    const idMap = new Map();
+    data.forEach((product)=>{
+        if (!idMap.get(product.id)) idMap.set(product.id, product);
+    });
+    return [
+        ...idMap.values()
+    ];
+}
 
-},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./components/page/page":"hCezX","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./page_manager":"j7Bvv"}],"e5BwA":[function(require,module,exports) {
+},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./components/page/page":"hCezX","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./page_manager":"j7Bvv","./components/paginator/paginator":"2HLYK"}],"e5BwA":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getDataFromApi", ()=>getDataFromApi);
@@ -1699,27 +1711,27 @@ parcelHelpers.defineInteropFlag(exports);
 var _product = require("../product/product");
 var _productDefault = parcelHelpers.interopDefault(_product);
 class PageComponent extends HTMLElement {
-    _root;
+    root;
     _capasity = 50;
-    _cachProducts = new Array();
+    cachProducts = new Array();
     _id = 0;
-    _page_id = 0;
+    page_id = 0;
     constructor(id){
         super();
         this._id = id;
-        this._root = this.attachShadow({
+        this.root = this.attachShadow({
             mode: "open"
         });
-        this._root.innerHTML = renderTemplate();
+        this.root.innerHTML = renderTemplate();
         this.setAttribute("class", "page");
     }
     addProduct(product_data) {
-        if (this._capasity > 0) {
-            this._cachProducts.push(product_data);
-            const product = new (0, _productDefault.default)(this._page_id, product_data);
-            this._root.getRootNode().appendChild(product);
+        if (this.capasity > 0) {
+            this.cachProducts.push(product_data);
+            const product = new (0, _productDefault.default)(this.page_id, product_data);
+            this.root.getRootNode().appendChild(product);
             this._capasity -= 1;
-            this._page_id += 1;
+            this.page_id += 1;
             return true;
         } else return false;
     }
@@ -1756,18 +1768,18 @@ function renderTemplate() {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 class ProductComponent extends HTMLElement {
-    _root;
-    _product = null;
+    root;
+    product = null;
     _id = 0;
     constructor(id, product){
         super();
         this._id = id;
-        this._product = product;
-        this._root = this.attachShadow({
+        this.product = product;
+        this.root = this.attachShadow({
             mode: "open"
         });
         this.setAttribute("class", "product-cmp");
-        this._root.innerHTML = renderTemplate(this._id, this._product);
+        this.root.innerHTML = renderTemplate(this._id, this.product);
     }
 }
 exports.default = ProductComponent;
@@ -1863,6 +1875,108 @@ class PageManager {
     };
 }
 exports.default = PageManager;
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"2HLYK":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+class Paginator extends HTMLElement {
+    root = null;
+    cursor = 0;
+    pageManager;
+    dom = new Map();
+    constructor(pageManager){
+        super();
+        this.pageManager = pageManager;
+        this.root = this.attachShadow({
+            mode: "open"
+        });
+        this.setAttribute("class", "page-paginator");
+        this.root.innerHTML = renderTemplate(this.cursor);
+        this.dom.set("position", this.root.querySelector(".position"));
+        this.dom.set("leftButton", this.root.querySelector(".left-button"));
+        this.dom.set("rightButton", this.root.querySelector(".right-button"));
+    }
+    connectedCallback() {}
+    set position(position) {
+        if (position < this.pageManager.pagesCount) this.cursor = position;
+    }
+    get position() {
+        return this.cursor;
+    }
+    nextPosition() {
+        if (this.cursor < this.pageManager.pagesCount) this.cursor += 1;
+    }
+    previewPosition() {
+        if (this.cursor >= 0) this.cursor -= 1;
+    }
+    appendToDOM(parent) {
+        parent.appendChild(this);
+    }
+}
+exports.default = Paginator;
+if (!customElements.get("nice2jm-page-paginator")) customElements.define("nice2jm-page-paginator", Paginator);
+function renderTemplate(position) {
+    const html = `
+        <div class="left-button button"></div>
+        <span class="position">${position}</span>
+        <div class="right-button button"></div>
+    `;
+    const css = `
+        <style>
+            :host {
+                --border-color: rgb(100,100,100);
+                --text-color: rgb(100,100,100);
+                display: flex;
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;
+                gap: 0.5rem;
+                background: rgb(250, 250, 250);
+                min-width: 100px;
+                width: 120px;
+                min-height: 50px;
+                margin: 1rem;
+                border: 3px solid rgb(100, 100, 100);
+                border-radius:1rem;
+                
+                padding: 1rem;
+            }
+            .position{
+                color: var(--text-color);
+                font:bold 1.5rem "Arial";
+            }
+            .button {
+                width: 40px;
+                height: 40px;
+                background-color: transparent;
+                cursor: pointer;
+            }
+
+            .left-button::before {
+                position: absolute;
+                display: block;
+                content: "";
+                width: 10px;
+                height: 10px;
+                border-left: 5px solid var(--border-color);
+                border-top: 5px solid var(--border-color);
+                transform: translate(15px,12px) rotate(-45deg);
+            }
+
+            .right-button::after {
+                display: block;
+                position:absolute;
+                content: "";
+                width: 10px;
+                height: 10px;
+                border-right: 5px solid var(--border-color);
+                border-top: 5px solid var(--border-color);
+                transform: translate(10px,12px) rotate(45deg);
+            }
+        </style>
+    `;
+    return `${html}${css}`;
+}
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")
 

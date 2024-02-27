@@ -1,14 +1,19 @@
 import { getDataFromApi } from "./api/api";
 import { APICOMMANDS } from "./api/api_commands";
 import PageComponent from "./components/page/page";
+import Paginator from "./components/paginator/paginator";
 import PageManager from "./page_manager";
 import { Product } from "./types/app_types";
 
 window.addEventListener('load', async () => {
     initFilter();
+
     const pageManager = new PageManager();
+    const upPaginator = new Paginator(pageManager);
+    upPaginator.appendToDOM(document.querySelector(".paginator-place")!);
+
     getProductData({ offset: 0, limit: 10 }).then((products) => {
-        return fillPage(products, pageManager);
+        return fillPage(clearDublicateProduct(products), pageManager);
     }).then((pageManager) => {
         appendPageToDocument(pageManager.getLastPage());
     }).catch((err) => {
@@ -33,7 +38,7 @@ window.addEventListener('load', async () => {
 //Data Products----------
 async function getProductData(options: { offset: number, limit: number }) {
     const ids_raw = await getDataFromApi(APICOMMANDS.getIDs({ offset: options.offset, limit: options.limit }));
-    const ids = clearDublicate(ids_raw.result);
+    const ids = clearDublicateID(ids_raw.result);
     const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids }));
     return Promise.resolve(products.result);
 }
@@ -81,8 +86,7 @@ function submitDebounce(filterForm: HTMLFormElement) {
     const filterFormSubmit = document.querySelector("#filter-form>button[type=submit]") as HTMLButtonElement;
     filterFormSubmit.classList.add("inaccess");
     onFormSubmit(filterForm).then((data) => {
-        const no_dublicate_data = data.map((dt) => clearDublicate(dt.result));
-        const ids_data = crossFilterData(no_dublicate_data);
+        const ids_data = crossFilterData(data);
         return getProductsByIDs(ids_data);
     }).then((data) => {
         console.log(data.result)
@@ -152,6 +156,15 @@ function blockedSubmitFilterForm(submitButton: HTMLButtonElement, timeout: numbe
         submitButton.classList.remove("inaccess");
     }, timeout);
 }
-function clearDublicate(data: Array<string>) {
+function clearDublicateID(data: Array<string>) {
     return [...new Set([...data])];
+}
+function clearDublicateProduct(data: Array<Product>) {
+    const idMap = new Map<string, Product>();
+    data.forEach((product) => {
+        if (!idMap.get(product.id)) {
+            idMap.set(product.id, product);
+        }
+    });
+    return [...idMap.values()];
 }

@@ -10,6 +10,13 @@
   min-height: 100vh;
 }
 
+.paginator-place {
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+}
+
 .app-filter > form {
   color: #c8c8c8;
   background: #32323c;
