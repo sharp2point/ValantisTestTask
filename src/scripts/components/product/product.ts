@@ -20,8 +20,11 @@ if (!customElements.get("nice2jm-product")) {
 }
 //-----------------------------------------------
 function renderTemplate(id: number, product: Product) {
+    const rid = `${id}`;
+    const lid = "".padStart((5 - rid.length), "0");
+    const isEvenID = (id % 2 === 0) ? false : true;
     const html = `   
-        <span class="id">${id}</span>     
+        <span class="id"><span class="lid">${lid}</span><span class="rid">${rid}</span></span>     
         <span class="product-id">${product.id}</span>
         <span class="brand">${product.brand}</span>
         <span class="price">${product.price}</span>
@@ -31,6 +34,8 @@ function renderTemplate(id: number, product: Product) {
     const css = `
         <style>
             :host{
+                --odd-back-color:rgb(60,60,60);
+                --even-back-color:rgb(70,70,70);
                 display:flex;
                 flex-direction:row;
                 justify-content:space-between;
@@ -40,30 +45,53 @@ function renderTemplate(id: number, product: Product) {
                 min-height:40px;
                 font:600 1rem "Arial";
                 border-bottom:1px solid rgb(100,100,100);
-                background: rgb(50,50,50);
+                background: ${isEvenID ? 'var(--even-back-color)' : 'var(--odd-back-color)'};
             }
             span{
-                padding-inline:1rem;
-                color: white;
+                padding-inline:0.3rem;                
                 overflow:hidden;
                 white-space: nowrap;
-                text-overflow: ellipsis;                
+                text-overflow: ellipsis;  
+            }
+            span.id{          
+                display:flex;
+                flex-direction:row;                
+                justify-content:start;  
+                gap:0;    
+                flex-basis:6%;
                 border-right: 1px solid rgb(100,100,100);
             }
-            span.id{
-                flex-basis:2%;
+            span.id span{
+                margin:0;
+                padding:0;
+            }
+            span.id .lid{
+                border:none;
+                color:rgb(150,150,150);
+            }
+            span.id .rid{
+                border:none;
+                font-size:1.3rem;
+                color:rgb(220,150,100);
             }
             span.product-id{
-                flex-basis:25%;                
+                color: rgb(220,220,0);
+                flex-basis:25%;  
+                border-right: 1px solid rgb(100,100,100);              
             }
             span.brand{
-                flex-basis:5%;
+                color: white;
+                flex-basis:10%;
+                border-right: 1px solid rgb(100,100,100);
             }
             span.price{
+                color: white;
                 flex-basis:5%;
+                border-right: 1px solid rgb(100,100,100);
             }
             span.product{
-                flex-basis:60%;
+                color: white;
+                flex-basis:50%;
             }
         </style>
     `

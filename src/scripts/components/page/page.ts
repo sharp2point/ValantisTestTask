@@ -5,12 +5,13 @@ export default class PageComponent extends HTMLElement {
     private root: ShadowRoot;
     private _capasity = 50;
     private cachProducts = new Array<Product>();
-    private _id = 0;
-    private index_product = 1;
+    private _id = 0; // id страницы
+    private index_product = 0; // порядковый номер продукта
 
-    constructor(id: number) {
+    constructor(id: number,init_index_product:number) {
         super();
         this._id = id;
+        this.index_product = init_index_product;
         this.root = this.attachShadow({ mode: 'open' });
         this.root.innerHTML = renderTemplate();
         this.setAttribute("class", "page");

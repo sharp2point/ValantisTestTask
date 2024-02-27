@@ -2,3 +2,21 @@
     pointer-events: none;
     color:rgba(100,100,100,0.1);    
 }
+.hide{
+    display: none;
+    
+}
+.opaq-0{
+    animation: opaqanim 1s linear;
+}
+.opaq-1 {
+    animation: opaqanim 1s linear reverse;
+}
+@keyframes opaqanim {
+    0%{
+        opacity: 1;
+    }
+    100%{
+        opacity: 0;
+    }
+}

@@ -590,6 +590,7 @@ var _paginatorDefault = parcelHelpers.interopDefault(_paginator);
 var _pageManager = require("./page_manager");
 var _pageManagerDefault = parcelHelpers.interopDefault(_pageManager);
 window.addEventListener("load", async ()=>{
+    (0, _appstate.APPSTATE).loader = document.querySelector(".loader-screen");
     const { pageManager, paginator } = InitStateApp();
     (0, _appstate.APPSTATE).pageManager = pageManager;
 // const responseIDs = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 10 }));
@@ -619,6 +620,7 @@ function InitStateApp() {
         shiftOffset();
         return fillPage(clearDublicateProduct(products), pageManager);
     }).then((pageManager)=>{
+        showLoader(false);
         return appendPageToDocument(pageManager.getFirstPage());
     }).then((result)=>{
         upPaginator.setEnabled(result);
@@ -631,12 +633,15 @@ function InitStateApp() {
     };
 }
 function uploadData() {
+    showLoader(true);
     getProductData({
         offset: (0, _appstate.APPSTATE).loadOffset,
         limit: (0, _appstate.APPSTATE).loadLimit
     }).then((products)=>{
         shiftOffset();
         return fillPage(clearDublicateProduct(products), (0, _appstate.APPSTATE).pageManager);
+    }).then(()=>{
+        showLoader(false);
     }).catch((err)=>{
         console.log("Get Product Error: ", err);
     });
@@ -678,10 +683,27 @@ function appendPageToDocument(page) {
     return false;
 }
 function pageVerifyOnRemainder(pageManager) {
-    return pageManager.getLastPage() && pageManager.getLastPage().capasity > 0 ? pageManager.getLastPage() : new (0, _pageDefault.default)(pageManager.pagesCount + 1);
+    return pageManager.getLastPage() && pageManager.getLastPage().capasity > 0 ? pageManager.getLastPage() : new (0, _pageDefault.default)(pageManager.pagesCount + 1, pageManager.pagesCount * (0, _appstate.APPSTATE).productsOnPage);
 }
 function shiftOffset() {
     (0, _appstate.APPSTATE).loadOffset = (0, _appstate.APPSTATE).loadOffset + (0, _appstate.APPSTATE).loadLimit;
+}
+function showLoader(isShow) {
+    if (isShow) {
+        (0, _appstate.APPSTATE).loader.classList.remove("opaq-0");
+        (0, _appstate.APPSTATE).loader.classList.add("opaq-100");
+        setTimeout(()=>{
+            (0, _appstate.APPSTATE).loader.classList.remove("hide");
+        }, 300);
+    } else {
+        (0, _appstate.APPSTATE).loader.classList.remove("opaq-100");
+        (0, _appstate.APPSTATE).loader.classList.add("opaq-0");
+        setTimeout(()=>{
+            (0, _appstate.APPSTATE).loader.classList.add("hide");
+        }, 1000);
+    }
+// APPSTATE.loader.classList.remove("hide") :
+// 
 }
 //Filter---------------
 function initFilter() {
@@ -786,7 +808,7 @@ function clearDublicateProduct(data) {
     ];
 }
 
-},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./appstate/appstate":"eMp2h","./components/paginator/paginator":"2HLYK","./page_manager":"j7Bvv","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./components/page/page":"hCezX"}],"e5BwA":[function(require,module,exports) {
+},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./appstate/appstate":"eMp2h","./components/page/page":"hCezX","./components/paginator/paginator":"2HLYK","./page_manager":"j7Bvv","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"e5BwA":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getDataFromApi", ()=>getDataFromApi);
@@ -1651,12 +1673,14 @@ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "APPSTATE", ()=>APPSTATE);
 const APPSTATE = {
+    loader: null,
     apiURL: "https://api.valantis.store:41000/",
     password: "Valantis",
     loadOffset: 0,
     loadLimit: 70,
     productsOnPage: 50,
-    pageManager: null
+    pageManager: null,
+    pagesOnServer: 265 // 264 * 49 + 18 = 12_954
 };
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gkKU3":[function(require,module,exports) {
@@ -1741,6 +1765,168 @@ function getFields(params) {
         "action": "get_fields",
         "params": params
     };
+}
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hCezX":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _product = require("../product/product");
+var _productDefault = parcelHelpers.interopDefault(_product);
+class PageComponent extends HTMLElement {
+    root;
+    _capasity = 50;
+    cachProducts = new Array();
+    _id = 0;
+    index_product = 0;
+    constructor(id, init_index_product){
+        super();
+        this._id = id;
+        this.index_product = init_index_product;
+        this.root = this.attachShadow({
+            mode: "open"
+        });
+        this.root.innerHTML = renderTemplate();
+        this.setAttribute("class", "page");
+    }
+    addProduct(product_data) {
+        if (this.capasity > 0) {
+            this.cachProducts.push(product_data);
+            const product = new (0, _productDefault.default)(this.index_product, product_data);
+            this.root.getRootNode().appendChild(product);
+            this._capasity -= 1;
+            this.index_product += 1;
+            return true;
+        } else return false;
+    }
+    get capasity() {
+        return this._capasity;
+    }
+    get pageId() {
+        return this._id;
+    }
+}
+exports.default = PageComponent;
+if (!customElements.get("nice2jm-page-products")) customElements.define("nice2jm-page-products", PageComponent);
+//-----------------------------------------------
+function renderTemplate() {
+    const html = `
+        
+    `;
+    const css = `
+        <style>
+            :host{
+                display:flex;
+                flex-direction:column;
+                justify-content: start;
+                align-items:center;
+                gap:0.1rem;
+                background:rgb(100,100,100);
+                width:100%;
+                margin:1rem;
+                border:3px solid rgb(150,150,150);
+            }
+        </style>
+    `;
+    return `${html}${css}`;
+}
+
+},{"../product/product":"gAdVN","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gAdVN":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+class ProductComponent extends HTMLElement {
+    root;
+    product = null;
+    _id = 0;
+    constructor(id, product){
+        super();
+        this._id = id;
+        this.product = product;
+        this.root = this.attachShadow({
+            mode: "open"
+        });
+        this.setAttribute("class", "product-cmp");
+        this.root.innerHTML = renderTemplate(this._id, this.product);
+    }
+}
+exports.default = ProductComponent;
+if (!customElements.get("nice2jm-product")) customElements.define("nice2jm-product", ProductComponent);
+//-----------------------------------------------
+function renderTemplate(id, product) {
+    const rid = `${id}`;
+    const lid = "".padStart(5 - rid.length, "0");
+    const isEvenID = id % 2 === 0 ? false : true;
+    const html = `   
+        <span class="id"><span class="lid">${lid}</span><span class="rid">${rid}</span></span>     
+        <span class="product-id">${product.id}</span>
+        <span class="brand">${product.brand}</span>
+        <span class="price">${product.price}</span>
+        <span class="product">${product.product}</span>
+    `;
+    const css = `
+        <style>
+            :host{
+                --odd-back-color:rgb(60,60,60);
+                --even-back-color:rgb(70,70,70);
+                display:flex;
+                flex-direction:row;
+                justify-content:space-between;
+                align-items: center;
+                flex-wrap:nowrap;
+                width:95%;
+                min-height:40px;
+                font:600 1rem "Arial";
+                border-bottom:1px solid rgb(100,100,100);
+                background: ${isEvenID ? "var(--even-back-color)" : "var(--odd-back-color)"};
+            }
+            span{
+                padding-inline:0.3rem;                
+                overflow:hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;  
+            }
+            span.id{          
+                display:flex;
+                flex-direction:row;                
+                justify-content:start;  
+                gap:0;    
+                flex-basis:6%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.id span{
+                margin:0;
+                padding:0;
+            }
+            span.id .lid{
+                border:none;
+                color:rgb(150,150,150);
+            }
+            span.id .rid{
+                border:none;
+                font-size:1.3rem;
+                color:rgb(220,150,100);
+            }
+            span.product-id{
+                color: rgb(220,220,0);
+                flex-basis:25%;  
+                border-right: 1px solid rgb(100,100,100);              
+            }
+            span.brand{
+                color: white;
+                flex-basis:10%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.price{
+                color: white;
+                flex-basis:5%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.product{
+                color: white;
+                flex-basis:50%;
+            }
+        </style>
+    `;
+    return `${html}${css}`;
 }
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"2HLYK":[function(require,module,exports) {
@@ -1947,139 +2133,6 @@ class PageManager {
     };
 }
 exports.default = PageManager;
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hCezX":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _product = require("../product/product");
-var _productDefault = parcelHelpers.interopDefault(_product);
-class PageComponent extends HTMLElement {
-    root;
-    _capasity = 50;
-    cachProducts = new Array();
-    _id = 0;
-    index_product = 1;
-    constructor(id){
-        super();
-        this._id = id;
-        this.root = this.attachShadow({
-            mode: "open"
-        });
-        this.root.innerHTML = renderTemplate();
-        this.setAttribute("class", "page");
-    }
-    addProduct(product_data) {
-        if (this.capasity > 0) {
-            this.cachProducts.push(product_data);
-            const product = new (0, _productDefault.default)(this.index_product, product_data);
-            this.root.getRootNode().appendChild(product);
-            this._capasity -= 1;
-            this.index_product += 1;
-            return true;
-        } else return false;
-    }
-    get capasity() {
-        return this._capasity;
-    }
-    get pageId() {
-        return this._id;
-    }
-}
-exports.default = PageComponent;
-if (!customElements.get("nice2jm-page-products")) customElements.define("nice2jm-page-products", PageComponent);
-//-----------------------------------------------
-function renderTemplate() {
-    const html = `
-        
-    `;
-    const css = `
-        <style>
-            :host{
-                display:flex;
-                flex-direction:column;
-                justify-content: start;
-                align-items:center;
-                gap:0.1rem;
-                background:rgb(100,100,100);
-                width:100%;
-                margin:1rem;
-                border:3px solid rgb(150,150,150);
-            }
-        </style>
-    `;
-    return `${html}${css}`;
-}
-
-},{"../product/product":"gAdVN","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gAdVN":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-class ProductComponent extends HTMLElement {
-    root;
-    product = null;
-    _id = 0;
-    constructor(id, product){
-        super();
-        this._id = id;
-        this.product = product;
-        this.root = this.attachShadow({
-            mode: "open"
-        });
-        this.setAttribute("class", "product-cmp");
-        this.root.innerHTML = renderTemplate(this._id, this.product);
-    }
-}
-exports.default = ProductComponent;
-if (!customElements.get("nice2jm-product")) customElements.define("nice2jm-product", ProductComponent);
-//-----------------------------------------------
-function renderTemplate(id, product) {
-    const html = `   
-        <span class="id">${id}</span>     
-        <span class="product-id">${product.id}</span>
-        <span class="brand">${product.brand}</span>
-        <span class="price">${product.price}</span>
-        <span class="product">${product.product}</span>
-    `;
-    const css = `
-        <style>
-            :host{
-                display:flex;
-                flex-direction:row;
-                justify-content:space-between;
-                align-items: center;
-                flex-wrap:nowrap;
-                width:95%;
-                min-height:40px;
-                font:600 1rem "Arial";
-                border-bottom:1px solid rgb(100,100,100);
-                background: rgb(50,50,50);
-            }
-            span{
-                padding-inline:1rem;
-                color: white;
-                overflow:hidden;
-                white-space: nowrap;
-                text-overflow: ellipsis;                
-                border-right: 1px solid rgb(100,100,100);
-            }
-            span.id{
-                flex-basis:2%;
-            }
-            span.product-id{
-                flex-basis:25%;                
-            }
-            span.brand{
-                flex-basis:5%;
-            }
-            span.price{
-                flex-basis:5%;
-            }
-            span.product{
-                flex-basis:60%;
-            }
-        </style>
-    `;
-    return `${html}${css}`;
-}
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")
 

@@ -7,6 +7,7 @@ import PageManager from "./page_manager";
 import { Product } from "./types/app_types";
 
 window.addEventListener('load', async () => {
+    APPSTATE.loader = document.querySelector(".loader-screen");
     const { pageManager, paginator } = InitStateApp();
     APPSTATE.pageManager = pageManager;
 
@@ -40,6 +41,7 @@ function InitStateApp() {
         shiftOffset();
         return fillPage(clearDublicateProduct(products), pageManager);
     }).then((pageManager) => {
+        showLoader(false);
         return appendPageToDocument(pageManager.getFirstPage());
     }).then((result) => {
         upPaginator.setEnabled(result);
@@ -54,9 +56,12 @@ function InitStateApp() {
 }
 
 function uploadData() {
+    showLoader(true);
     getProductData({ offset: APPSTATE.loadOffset, limit: APPSTATE.loadLimit }).then((products) => {
         shiftOffset();
         return fillPage(clearDublicateProduct(products), APPSTATE.pageManager);
+    }).then(() => {
+        showLoader(false);
     }).catch((err) => {
         console.log("Get Product Error: ", err);
     });
@@ -98,10 +103,27 @@ function appendPageToDocument(page: PageComponent) {
 function pageVerifyOnRemainder(pageManager: PageManager) {
     return (pageManager.getLastPage() && pageManager.getLastPage().capasity > 0) ?
         pageManager.getLastPage() :
-        new PageComponent(pageManager.pagesCount + 1);
+        new PageComponent(pageManager.pagesCount + 1, pageManager.pagesCount * APPSTATE.productsOnPage);
 }
 function shiftOffset() {
     APPSTATE.loadOffset = APPSTATE.loadOffset + APPSTATE.loadLimit;
+}
+function showLoader(isShow: boolean) {
+    if (isShow) {
+        APPSTATE.loader.classList.remove("opaq-0");
+        APPSTATE.loader.classList.add("opaq-100");
+        setTimeout(() => {
+            APPSTATE.loader.classList.remove("hide");
+        }, 300);
+    } else {
+        APPSTATE.loader.classList.remove("opaq-100");
+        APPSTATE.loader.classList.add("opaq-0");
+        setTimeout(() => {
+            APPSTATE.loader.classList.add("hide");
+        },1000);
+    }
+        // APPSTATE.loader.classList.remove("hide") :
+        // 
 }
 //Filter---------------
 
