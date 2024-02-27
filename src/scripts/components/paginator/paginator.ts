@@ -4,21 +4,13 @@ export default class Paginator extends HTMLElement {
     private root: ShadowRoot | null = null;
     private cursor = 0;
     private pageManager: PageManager | null;
-    private dom: Map<string, HTMLElement> = new Map<string, HTMLElement>();
-
-    constructor(pageManager: PageManager) {
-        super();
-        this.pageManager = pageManager;
-        this.root = this.attachShadow({ mode: 'open' });
-        this.setAttribute("class", "page-paginator")
-        this.root.innerHTML = renderTemplate(this.cursor);
-        this.dom.set("position", this.root.querySelector(".position")!);
-        this.dom.set("leftButton", this.root.querySelector(".left-button")!);
-        this.dom.set("rightButton", this.root.querySelector(".right-button")!);
-    }
-    connectedCallback() {
-
-    }
+    private dom = {
+        position: null,
+        leftButton: null,
+        rightButton: null
+    };
+    private subscribers = new Array<(position: number) => void>();
+    //-----------------------------------------
     set position(position: number) {
         if (position < this.pageManager!.pagesCount) {
             this.cursor = position;
@@ -27,18 +19,59 @@ export default class Paginator extends HTMLElement {
     get position() {
         return this.cursor;
     }
+    //------------------------------------------
+    constructor(pageManager: PageManager) {
+        super();
+        this.pageManager = pageManager;
+        this.root = this.attachShadow({ mode: 'open' });
+        this.setAttribute("class", "page-paginator")
+        this.root.innerHTML = renderTemplate(this.cursor + 1);
+        this.dom.position = this.root.querySelector(".position");
+        this.dom.leftButton = this.root.querySelector(".left-button")!;
+        this.dom.rightButton = this.root.querySelector(".right-button")!;
+        this.style.visibility = "hidden";
+    }
+    connectedCallback() {
+        (this.dom.position! as HTMLElement).addEventListener("click", (e) => {
+
+        });
+        (this.dom.leftButton! as HTMLElement).addEventListener("click", (e) => {
+            this.previewPosition();
+            this.updateTextPosition();
+            this.notify();
+        });
+        (this.dom.rightButton! as HTMLElement).addEventListener("click", (e) => {
+            this.nextPosition();
+            this.updateTextPosition();
+            this.notify()
+        });
+    }
     nextPosition() {
-        if (this.cursor < this.pageManager!.pagesCount) {
+        if (this.cursor < this.pageManager!.pagesCount - 1) {
             this.cursor += 1;
         }
     }
     previewPosition() {
-        if (this.cursor >= 0) {
+        if (this.cursor > 0) {
             this.cursor -= 1;
         }
     }
+    addSubscriber(fn: (position: number) => void) {
+        this.subscribers.push(fn);
+    }
     appendToDOM(parent: HTMLElement) {
         parent.appendChild(this);
+    }
+    setEnabled = (isEnable: boolean)=> {
+        isEnable ? this.style.visibility = "visible" : this.style.visibility = "hidden";
+    }
+    private updateTextPosition() {
+        (this.dom.position! as HTMLElement).textContent = `${this.cursor + 1}`;
+    }
+    private notify() {
+        this.subscribers.forEach((fn) => {
+            fn(this.cursor)
+        })
     }
 }
 if (!customElements.get("nice2jm-page-paginator")) {
@@ -55,6 +88,7 @@ function renderTemplate(position: number) {
         <style>
             :host {
                 --border-color: rgb(100,100,100);
+                --inaccess-border-color: rgb(150,150,150);
                 --text-color: rgb(100,100,100);
                 display: flex;
                 flex-direction: row;
@@ -102,6 +136,15 @@ function renderTemplate(position: number) {
                 border-right: 5px solid var(--border-color);
                 border-top: 5px solid var(--border-color);
                 transform: translate(10px,12px) rotate(45deg);
+            }
+
+            .inaccess::before{
+                border-left: 5px solid var(--inaccess-border-color);
+                border-top: 5px solid var(--inaccess-border-color);
+            }
+            .inaccess::after{
+                border-right: 5px solid var(--inaccess-border-color);
+                border-top: 5px solid var(--inaccess-border-color);
             }
         </style>
     `

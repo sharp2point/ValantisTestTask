@@ -1,44 +1,66 @@
 import PageComponent from "./components/page/page";
 
 export default class PageManager {
-    _pages: Array<PageComponent> = new Array<PageComponent>();
-    _pageIndex = 0;
-    _cursor = 0;
+    private pages = new Array<PageComponent>();
+    private _pageCount = 0;
+    private cursor = 0;
+    private subscribers = new Array<(page: PageComponent) => void>();
+    private uploadDataEvent: (() => void);
 
     get pagesCount() {
-        return this._pageIndex
+        return this._pageCount;
     }
+
+    constructor(uploadDataEvent: () => void) {
+        this.uploadDataEvent = uploadDataEvent;
+    }
+
     addPage(page: PageComponent) {
-        this._pages.push(page);
-        this._pageIndex += 1;
+        this.pages.push(page);
+        this._pageCount += 1;
     }
     getPageByIndex = (index: number) => {
-        this._cursor = index;
-        return this._pages[index];
+        this.cursor = index;
+        return this.pages[index];
     };
     getFirstPage = () => {
-        this._cursor = 0;
-        return this._pages[0];
+        this.cursor = 0;
+        return this.pages[0];
     }
     getLastPage = () => {
-        this._cursor = this._pages.length - 1;
-        return this._pages[this._pages.length - 1];
+        this.cursor = this.pages.length - 1;
+        return this.pages[this.pages.length - 1];
     }
     nextPage = () => {
-        if (this._cursor <= this._pages.length - 1) {
-            this._cursor += 1;
-            return this.getPageByIndex(this._cursor);
+        if (this.cursor <= this.pages.length - 1) {
+            this.cursor += 1;
+            return this.getPageByIndex(this.cursor);
         } else {
             return this.getLastPage();
         }
     }
     previewPage = () => {
-        if (this._cursor >= 0) {
-            this._cursor -= 1;
-            return this.getPageByIndex(this._cursor);
+        if (this.cursor >= 0) {
+            this.cursor -= 1;
+            return this.getPageByIndex(this.cursor);
         } else {
             return this.getFirstPage();
         }
+    }
+    addSubscriber(fn: (page: PageComponent) => void) {
+        this.subscribers.push(fn);
+    }
+    subsPaginator = (position: number) => {
+        this.cursor = position;
+        if (this.cursor === this.pagesCount - 1) {
+            this.uploadDataEvent();
+        }
+        this.notyfy()
+    }
+    notyfy = () => {
+        this.subscribers.forEach((fn) => {
+            fn(this.getPageByIndex(this.cursor));
+        })
     }
 
 }

@@ -12,7 +12,6 @@
     "compilerOptions": {
         "target": "ES2022",
         "module": "esnext",
-        "strict": true , 
         "isolatedModules": true,
          "moduleResolution": "node",
         "esModuleInterop": true,

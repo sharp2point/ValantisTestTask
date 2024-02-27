@@ -582,6 +582,7 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 var _api = require("./api/api");
 var _apiCommands = require("./api/api_commands");
+var _appstate = require("./appstate/appstate");
 var _page = require("./components/page/page");
 var _pageDefault = parcelHelpers.interopDefault(_page);
 var _paginator = require("./components/paginator/paginator");
@@ -589,20 +590,8 @@ var _paginatorDefault = parcelHelpers.interopDefault(_paginator);
 var _pageManager = require("./page_manager");
 var _pageManagerDefault = parcelHelpers.interopDefault(_pageManager);
 window.addEventListener("load", async ()=>{
-    initFilter();
-    const pageManager = new (0, _pageManagerDefault.default)();
-    const upPaginator = new (0, _paginatorDefault.default)(pageManager);
-    upPaginator.appendToDOM(document.querySelector(".paginator-place"));
-    getProductData({
-        offset: 0,
-        limit: 10
-    }).then((products)=>{
-        return fillPage(clearDublicateProduct(products), pageManager);
-    }).then((pageManager)=>{
-        appendPageToDocument(pageManager.getLastPage());
-    }).catch((err)=>{
-        console.log("Get Product Error: ", err);
-    });
+    const { pageManager, paginator } = InitStateApp();
+    (0, _appstate.APPSTATE).pageManager = pageManager;
 // const responseIDs = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 10 }));
 // console.log("IDs ---------------------");
 // console.log(responseIDs.result);
@@ -616,6 +605,42 @@ window.addEventListener("load", async ()=>{
 // console.log("Filter Price 17500.00 ---------------------");
 // console.log(filter.result);
 });
+function InitStateApp() {
+    initFilter();
+    const pageManager = new (0, _pageManagerDefault.default)(uploadData);
+    pageManager.addSubscriber(appendPageToDocument);
+    const upPaginator = new (0, _paginatorDefault.default)(pageManager);
+    upPaginator.appendToDOM(document.querySelector(".paginator-place"));
+    upPaginator.addSubscriber(pageManager.subsPaginator);
+    getProductData({
+        offset: (0, _appstate.APPSTATE).loadOffset,
+        limit: (0, _appstate.APPSTATE).loadLimit
+    }).then((products)=>{
+        shiftOffset();
+        return fillPage(clearDublicateProduct(products), pageManager);
+    }).then((pageManager)=>{
+        return appendPageToDocument(pageManager.getFirstPage());
+    }).then((result)=>{
+        upPaginator.setEnabled(result);
+    }).catch((err)=>{
+        console.log("Get Product Error: ", err);
+    });
+    return {
+        pageManager: pageManager,
+        paginator: upPaginator
+    };
+}
+function uploadData() {
+    getProductData({
+        offset: (0, _appstate.APPSTATE).loadOffset,
+        limit: (0, _appstate.APPSTATE).loadLimit
+    }).then((products)=>{
+        shiftOffset();
+        return fillPage(clearDublicateProduct(products), (0, _appstate.APPSTATE).pageManager);
+    }).catch((err)=>{
+        console.log("Get Product Error: ", err);
+    });
+}
 //Data Products----------
 async function getProductData(options) {
     const ids_raw = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getIDs({
@@ -629,7 +654,7 @@ async function getProductData(options) {
     return Promise.resolve(products.result);
 }
 function fillPage(products, pageManager) {
-    const page = new (0, _pageDefault.default)(1);
+    let page = pageVerifyOnRemainder(pageManager);
     for(let i = 0; i < products.length; i++){
         const result = page.addProduct(products[i]);
         if (i === products.length - 1) {
@@ -646,7 +671,17 @@ function fillPage(products, pageManager) {
 }
 function appendPageToDocument(page) {
     const pagePlace = document.querySelector(".app-page");
-    if (pagePlace) pagePlace.appendChild(page);
+    if (pagePlace) {
+        pagePlace.replaceChildren(page);
+        return true;
+    }
+    return false;
+}
+function pageVerifyOnRemainder(pageManager) {
+    return pageManager.getLastPage() && pageManager.getLastPage().capasity > 0 ? pageManager.getLastPage() : new (0, _pageDefault.default)(pageManager.pagesCount + 1);
+}
+function shiftOffset() {
+    (0, _appstate.APPSTATE).loadOffset = (0, _appstate.APPSTATE).loadOffset + (0, _appstate.APPSTATE).loadLimit;
 }
 //Filter---------------
 function initFilter() {
@@ -751,7 +786,7 @@ function clearDublicateProduct(data) {
     ];
 }
 
-},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./components/page/page":"hCezX","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./page_manager":"j7Bvv","./components/paginator/paginator":"2HLYK"}],"e5BwA":[function(require,module,exports) {
+},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./appstate/appstate":"eMp2h","./components/paginator/paginator":"2HLYK","./page_manager":"j7Bvv","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./components/page/page":"hCezX"}],"e5BwA":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getDataFromApi", ()=>getDataFromApi);
@@ -1618,7 +1653,10 @@ parcelHelpers.export(exports, "APPSTATE", ()=>APPSTATE);
 const APPSTATE = {
     apiURL: "https://api.valantis.store:41000/",
     password: "Valantis",
-    productsOnPage: 50
+    loadOffset: 0,
+    loadLimit: 70,
+    productsOnPage: 50,
+    pageManager: null
 };
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gkKU3":[function(require,module,exports) {
@@ -1705,6 +1743,211 @@ function getFields(params) {
     };
 }
 
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"2HLYK":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+class Paginator extends HTMLElement {
+    root = null;
+    cursor = 0;
+    pageManager;
+    dom = {
+        position: null,
+        leftButton: null,
+        rightButton: null
+    };
+    subscribers = new Array();
+    //-----------------------------------------
+    set position(position) {
+        if (position < this.pageManager.pagesCount) this.cursor = position;
+    }
+    get position() {
+        return this.cursor;
+    }
+    //------------------------------------------
+    constructor(pageManager){
+        super();
+        this.pageManager = pageManager;
+        this.root = this.attachShadow({
+            mode: "open"
+        });
+        this.setAttribute("class", "page-paginator");
+        this.root.innerHTML = renderTemplate(this.cursor + 1);
+        this.dom.position = this.root.querySelector(".position");
+        this.dom.leftButton = this.root.querySelector(".left-button");
+        this.dom.rightButton = this.root.querySelector(".right-button");
+        this.style.visibility = "hidden";
+    }
+    connectedCallback() {
+        this.dom.position.addEventListener("click", (e)=>{});
+        this.dom.leftButton.addEventListener("click", (e)=>{
+            this.previewPosition();
+            this.updateTextPosition();
+            this.notify();
+        });
+        this.dom.rightButton.addEventListener("click", (e)=>{
+            this.nextPosition();
+            this.updateTextPosition();
+            this.notify();
+        });
+    }
+    nextPosition() {
+        if (this.cursor < this.pageManager.pagesCount - 1) this.cursor += 1;
+    }
+    previewPosition() {
+        if (this.cursor > 0) this.cursor -= 1;
+    }
+    addSubscriber(fn) {
+        this.subscribers.push(fn);
+    }
+    appendToDOM(parent) {
+        parent.appendChild(this);
+    }
+    setEnabled = (isEnable)=>{
+        isEnable ? this.style.visibility = "visible" : this.style.visibility = "hidden";
+    };
+    updateTextPosition() {
+        this.dom.position.textContent = `${this.cursor + 1}`;
+    }
+    notify() {
+        this.subscribers.forEach((fn)=>{
+            fn(this.cursor);
+        });
+    }
+}
+exports.default = Paginator;
+if (!customElements.get("nice2jm-page-paginator")) customElements.define("nice2jm-page-paginator", Paginator);
+function renderTemplate(position) {
+    const html = `
+        <div class="left-button button"></div>
+        <span class="position">${position}</span>
+        <div class="right-button button"></div>
+    `;
+    const css = `
+        <style>
+            :host {
+                --border-color: rgb(100,100,100);
+                --inaccess-border-color: rgb(150,150,150);
+                --text-color: rgb(100,100,100);
+                display: flex;
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;
+                gap: 0.5rem;
+                background: rgb(250, 250, 250);
+                min-width: 100px;
+                width: 120px;
+                min-height: 50px;
+                margin: 1rem;
+                border: 3px solid rgb(100, 100, 100);
+                border-radius:1rem;
+                
+                padding: 1rem;
+            }
+            .position{
+                color: var(--text-color);
+                font:bold 1.5rem "Arial";
+            }
+            .button {
+                width: 40px;
+                height: 40px;
+                background-color: transparent;
+                cursor: pointer;
+            }
+
+            .left-button::before {
+                position: absolute;
+                display: block;
+                content: "";
+                width: 10px;
+                height: 10px;
+                border-left: 5px solid var(--border-color);
+                border-top: 5px solid var(--border-color);
+                transform: translate(15px,12px) rotate(-45deg);
+            }
+
+            .right-button::after {
+                display: block;
+                position:absolute;
+                content: "";
+                width: 10px;
+                height: 10px;
+                border-right: 5px solid var(--border-color);
+                border-top: 5px solid var(--border-color);
+                transform: translate(10px,12px) rotate(45deg);
+            }
+
+            .inaccess::before{
+                border-left: 5px solid var(--inaccess-border-color);
+                border-top: 5px solid var(--inaccess-border-color);
+            }
+            .inaccess::after{
+                border-right: 5px solid var(--inaccess-border-color);
+                border-top: 5px solid var(--inaccess-border-color);
+            }
+        </style>
+    `;
+    return `${html}${css}`;
+}
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"j7Bvv":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+class PageManager {
+    pages = new Array();
+    _pageCount = 0;
+    cursor = 0;
+    subscribers = new Array();
+    uploadDataEvent;
+    get pagesCount() {
+        return this._pageCount;
+    }
+    constructor(uploadDataEvent){
+        this.uploadDataEvent = uploadDataEvent;
+    }
+    addPage(page) {
+        this.pages.push(page);
+        this._pageCount += 1;
+    }
+    getPageByIndex = (index)=>{
+        this.cursor = index;
+        return this.pages[index];
+    };
+    getFirstPage = ()=>{
+        this.cursor = 0;
+        return this.pages[0];
+    };
+    getLastPage = ()=>{
+        this.cursor = this.pages.length - 1;
+        return this.pages[this.pages.length - 1];
+    };
+    nextPage = ()=>{
+        if (this.cursor <= this.pages.length - 1) {
+            this.cursor += 1;
+            return this.getPageByIndex(this.cursor);
+        } else return this.getLastPage();
+    };
+    previewPage = ()=>{
+        if (this.cursor >= 0) {
+            this.cursor -= 1;
+            return this.getPageByIndex(this.cursor);
+        } else return this.getFirstPage();
+    };
+    addSubscriber(fn) {
+        this.subscribers.push(fn);
+    }
+    subsPaginator = (position)=>{
+        this.cursor = position;
+        if (this.cursor === this.pagesCount - 1) this.uploadDataEvent();
+        this.notyfy();
+    };
+    notyfy = ()=>{
+        this.subscribers.forEach((fn)=>{
+            fn(this.getPageByIndex(this.cursor));
+        });
+    };
+}
+exports.default = PageManager;
+
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hCezX":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
@@ -1715,7 +1958,7 @@ class PageComponent extends HTMLElement {
     _capasity = 50;
     cachProducts = new Array();
     _id = 0;
-    page_id = 0;
+    index_product = 1;
     constructor(id){
         super();
         this._id = id;
@@ -1728,15 +1971,18 @@ class PageComponent extends HTMLElement {
     addProduct(product_data) {
         if (this.capasity > 0) {
             this.cachProducts.push(product_data);
-            const product = new (0, _productDefault.default)(this.page_id, product_data);
+            const product = new (0, _productDefault.default)(this.index_product, product_data);
             this.root.getRootNode().appendChild(product);
             this._capasity -= 1;
-            this.page_id += 1;
+            this.index_product += 1;
             return true;
         } else return false;
     }
     get capasity() {
         return this._capasity;
+    }
+    get pageId() {
+        return this._id;
     }
 }
 exports.default = PageComponent;
@@ -1829,149 +2075,6 @@ function renderTemplate(id, product) {
             }
             span.product{
                 flex-basis:60%;
-            }
-        </style>
-    `;
-    return `${html}${css}`;
-}
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"j7Bvv":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-class PageManager {
-    _pages = new Array();
-    _pageIndex = 0;
-    _cursor = 0;
-    get pagesCount() {
-        return this._pageIndex;
-    }
-    addPage(page) {
-        this._pages.push(page);
-        this._pageIndex += 1;
-    }
-    getPageByIndex = (index)=>{
-        this._cursor = index;
-        return this._pages[index];
-    };
-    getFirstPage = ()=>{
-        this._cursor = 0;
-        return this._pages[0];
-    };
-    getLastPage = ()=>{
-        this._cursor = this._pages.length - 1;
-        return this._pages[this._pages.length - 1];
-    };
-    nextPage = ()=>{
-        if (this._cursor <= this._pages.length - 1) {
-            this._cursor += 1;
-            return this.getPageByIndex(this._cursor);
-        } else return this.getLastPage();
-    };
-    previewPage = ()=>{
-        if (this._cursor >= 0) {
-            this._cursor -= 1;
-            return this.getPageByIndex(this._cursor);
-        } else return this.getFirstPage();
-    };
-}
-exports.default = PageManager;
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"2HLYK":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-class Paginator extends HTMLElement {
-    root = null;
-    cursor = 0;
-    pageManager;
-    dom = new Map();
-    constructor(pageManager){
-        super();
-        this.pageManager = pageManager;
-        this.root = this.attachShadow({
-            mode: "open"
-        });
-        this.setAttribute("class", "page-paginator");
-        this.root.innerHTML = renderTemplate(this.cursor);
-        this.dom.set("position", this.root.querySelector(".position"));
-        this.dom.set("leftButton", this.root.querySelector(".left-button"));
-        this.dom.set("rightButton", this.root.querySelector(".right-button"));
-    }
-    connectedCallback() {}
-    set position(position) {
-        if (position < this.pageManager.pagesCount) this.cursor = position;
-    }
-    get position() {
-        return this.cursor;
-    }
-    nextPosition() {
-        if (this.cursor < this.pageManager.pagesCount) this.cursor += 1;
-    }
-    previewPosition() {
-        if (this.cursor >= 0) this.cursor -= 1;
-    }
-    appendToDOM(parent) {
-        parent.appendChild(this);
-    }
-}
-exports.default = Paginator;
-if (!customElements.get("nice2jm-page-paginator")) customElements.define("nice2jm-page-paginator", Paginator);
-function renderTemplate(position) {
-    const html = `
-        <div class="left-button button"></div>
-        <span class="position">${position}</span>
-        <div class="right-button button"></div>
-    `;
-    const css = `
-        <style>
-            :host {
-                --border-color: rgb(100,100,100);
-                --text-color: rgb(100,100,100);
-                display: flex;
-                flex-direction: row;
-                justify-content: center;
-                align-items: center;
-                gap: 0.5rem;
-                background: rgb(250, 250, 250);
-                min-width: 100px;
-                width: 120px;
-                min-height: 50px;
-                margin: 1rem;
-                border: 3px solid rgb(100, 100, 100);
-                border-radius:1rem;
-                
-                padding: 1rem;
-            }
-            .position{
-                color: var(--text-color);
-                font:bold 1.5rem "Arial";
-            }
-            .button {
-                width: 40px;
-                height: 40px;
-                background-color: transparent;
-                cursor: pointer;
-            }
-
-            .left-button::before {
-                position: absolute;
-                display: block;
-                content: "";
-                width: 10px;
-                height: 10px;
-                border-left: 5px solid var(--border-color);
-                border-top: 5px solid var(--border-color);
-                transform: translate(15px,12px) rotate(-45deg);
-            }
-
-            .right-button::after {
-                display: block;
-                position:absolute;
-                content: "";
-                width: 10px;
-                height: 10px;
-                border-right: 5px solid var(--border-color);
-                border-top: 5px solid var(--border-color);
-                transform: translate(10px,12px) rotate(45deg);
             }
         </style>
     `;

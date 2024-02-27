@@ -4,9 +4,9 @@ import ProductComponent from "../product/product";
 export default class PageComponent extends HTMLElement {
     private root: ShadowRoot;
     private _capasity = 50;
-    private cachProducts: Array<Product> = new Array<Product>();
+    private cachProducts = new Array<Product>();
     private _id = 0;
-    private page_id = 0;
+    private index_product = 1;
 
     constructor(id: number) {
         super();
@@ -18,10 +18,10 @@ export default class PageComponent extends HTMLElement {
     addProduct(product_data: Product) {
         if (this.capasity > 0) {
             this.cachProducts.push(product_data);
-            const product = new ProductComponent(this.page_id,product_data);
+            const product = new ProductComponent(this.index_product, product_data);
             this.root.getRootNode().appendChild(product);
             this._capasity -= 1;
-            this.page_id += 1;
+            this.index_product += 1;
             return true;
         } else {
             return false;
@@ -29,6 +29,9 @@ export default class PageComponent extends HTMLElement {
     }
     get capasity() {
         return this._capasity;
+    }
+    get pageId() {
+        return this._id;
     }
 }
 
