@@ -72,7 +72,6 @@ function renderTemplate() {
             align-items: center;
             z-index:10;
             color:white;
-            pointer-events: none;
             user-select: none;
         }
 

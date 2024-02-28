@@ -34,6 +34,7 @@ export default class FilterComponent extends HTMLElement {
         this.subscribers.push(fn);
     }
     notify(query: QueryFilter) {
+        
         this.subscribers.forEach((fn) => {
             fn(query);
         })

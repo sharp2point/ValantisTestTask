@@ -10,10 +10,30 @@
   min-height: 100vh;
 }
 
-.paginator-place {
+.settings {
   flex-direction: row;
   justify-content: center;
   align-items: center;
+  gap: 1rem;
+  display: flex;
+}
+
+.paginator-place {
+  flex-direction: row;
+  flex-basis: 60%;
+  justify-content: start;
+  align-items: center;
+  padding: 1rem;
+  display: flex;
+}
+
+.notify-place {
+  flex-direction: row;
+  flex-basis: 40%;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
   display: flex;
 }
 

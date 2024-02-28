@@ -43,28 +43,29 @@ export default class PageManager {
         this.cursor = this.pages.length - 1;
         return this.pages[this.pages.length - 1];
     }
-    nextPage = () => {
-        if (this.cursor <= this.pages.length - 1) {
-            this.cursor += 1;
-            return this.getPageByIndex(this.cursor);
-        } else {
-            return this.getLastPage();
-        }
-    }
-    previewPage = () => {
-        if (this.cursor >= 0) {
-            this.cursor -= 1;
-            return this.getPageByIndex(this.cursor);
-        } else {
-            return this.getFirstPage();
-        }
-    }
+    // nextPage = () => {
+    //     if (this.cursor <= this.pages.length - 1) {
+    //         this.cursor += 1;
+    //         return this.getPageByIndex(this.cursor);
+    //     } else {
+    //         return this.getLastPage();
+    //     }
+    // }
+    // previewPage = () => {
+    //     if (this.cursor >= 0) {
+    //         this.cursor -= 1;
+    //         return this.getPageByIndex(this.cursor);
+    //     } else {
+    //         return this.getFirstPage();
+    //     }
+    // }
     addSubscriber(fn: (page: PageComponent) => void) {
         this.subscribers.push(fn);
     }
     paginator = (position: number) => {
         this.cursor = position;
-        console.log("Count: ", this.pagesCount)
+        console.log("Pag: ", position)
+        console.log(this.name, " Pages: ", this.pagesCount)
         if (this.cursor === this.pagesCount - 1) {
             this.uploadDataEvent();
         }
@@ -72,6 +73,7 @@ export default class PageManager {
     }
     notyfy = () => {
         this.subscribers.forEach((fn) => {
+            console.log("Cur: ", this.cursor)
             fn(this.getPageByIndex(this.cursor));
         })
     }

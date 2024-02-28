@@ -591,6 +591,8 @@ var _loader = require("./components/loader/loader");
 var _loaderDefault = parcelHelpers.interopDefault(_loader);
 var _filter = require("./filter/filter");
 var _utils = require("./utils/utils");
+var _notify = require("./notyfy/notify");
+var _notifyDefault = parcelHelpers.interopDefault(_notify);
 window.addEventListener("load", async ()=>{
     (0, _appstate.APPSTATE).rootApp = document.querySelector("#app");
     (0, _appstate.APPSTATE).filter = document.querySelector(".filter");
@@ -599,6 +601,7 @@ window.addEventListener("load", async ()=>{
     (0, _appstate.APPSTATE).loader.appendToDOM((0, _appstate.APPSTATE).rootApp);
     (0, _appstate.APPSTATE).pageManager = new (0, _pageManagerDefault.default)("main", uploadData);
     (0, _appstate.APPSTATE).pageManager.addSubscriber((0, _utils.appendPageToDocument));
+    (0, _appstate.APPSTATE).pageManagerFocused = (0, _appstate.APPSTATE).pageManager;
     (0, _appstate.APPSTATE).filterPageManager = new (0, _pageManagerDefault.default)("filter", ()=>{
         console.log("Filter Update Page");
     });
@@ -614,23 +617,9 @@ window.addEventListener("load", async ()=>{
     }).then((pageManager)=>{
         (0, _appstate.APPSTATE).loader.show(false);
         return (0, _utils.appendPageToDocument)(pageManager.getFirstPage());
-    }).then((result)=>{
-        (0, _appstate.APPSTATE).paginator.setEnabled(result);
     }).catch((err)=>{
-        console.log("Get Product Error: ", err);
+        console.error("Get Product Error: ", err);
     });
-// const responseIDs = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 10 }));
-// console.log("IDs ---------------------");
-// console.log(responseIDs.result);
-// const products = await getDataFromApi(APICOMMANDS.getItems({ ids: [...responseIDs.result] }));
-// console.log("Products ---------------------");
-// console.log(products.result);
-// const fields = await getDataFromApi(APICOMMANDS.getFields({ field: "brand", offset: 0, limit: 100 }));
-// console.log("Fields ---------------------");
-// console.log(fields.result);
-// const filter = await getDataFromApi(APICOMMANDS.filter({ "price": 17500.00 }));
-// console.log("Filter Price 17500.00 ---------------------");
-// console.log(filter.result);
 });
 function uploadData() {
     (0, _appstate.APPSTATE).loader.show(true);
@@ -643,7 +632,11 @@ function uploadData() {
     }).then(()=>{
         (0, _appstate.APPSTATE).loader.show(false);
     }).catch((err)=>{
-        console.log("Get Product Error: ", err);
+        console.error("Product Request Error: ", err);
+        setTimeout(()=>{
+            console.log("Product Request Repeat");
+            uploadData();
+        }, 1000);
     });
 }
 async function getProductData(options) {
@@ -675,18 +668,51 @@ function fillPage(products, pageManager) {
 }
 //Filter---------------
 async function queryFilter(query) {
-    (0, _appstate.APPSTATE).loader.show(true);
-    (0, _appstate.APPSTATE).filterPageManager.clearState();
-    (0, _filter.getFilterData)(query).then((products)=>{
-        return fillPage((0, _utils.clearDublicateProduct)(products), (0, _appstate.APPSTATE).filterPageManager);
-    }).then((pageManager)=>{
-        (0, _appstate.APPSTATE).loader.show(false);
-        (0, _appstate.APPSTATE).paginator.setPageManager((0, _appstate.APPSTATE).filterPageManager);
-        return (0, _utils.appendPageToDocument)(pageManager.getFirstPage());
-    });
+    if (!(0, _utils.isQueryEmpty)(query)) {
+        clearNotify();
+        (0, _appstate.APPSTATE).loader.show(true);
+        (0, _appstate.APPSTATE).filterPageManager.clearState();
+        (0, _appstate.APPSTATE).pageManagerFocused = (0, _appstate.APPSTATE).filterPageManager;
+        (0, _filter.getFilterData)(query).then((products)=>{
+            const notify = new (0, _notifyDefault.default)("result-notify", `\u{432}\u{441}\u{435}\u{433}\u{43E} ${products.length}`);
+            notify.appendToDOM(document.querySelector(".notify-place"));
+            return fillPage((0, _utils.clearDublicateProduct)(products), (0, _appstate.APPSTATE).filterPageManager);
+        }).then((pageManager)=>{
+            (0, _appstate.APPSTATE).loader.show(false);
+            (0, _appstate.APPSTATE).paginator.setPageManager((0, _appstate.APPSTATE).filterPageManager);
+            if (pageManager.pagesCount > 0) return (0, _utils.appendPageToDocument)(pageManager.getFirstPage());
+            else {
+                const notify = new (0, _notifyDefault.default)("not-found-notify", "\u041F\u0440\u043E\u0434\u0443\u043A\u0442\u044B \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D\u044B");
+                return (0, _utils.appendPageToDocument)(notify);
+            }
+        }).then(()=>{
+            const notify = new (0, _notifyDefault.default)("filter-mode-notify", "\u0424\u0438\u043B\u044C\u0442\u0440");
+            notify.attachClickAction(closeFilterNotifyAction, "\u0417\u0430\u043A\u0440\u044B\u0442\u044C");
+            notify.appendToDOM(document.querySelector(".notify-place"));
+        }).catch((err)=>{
+            console.error("Filter Request Error: ", err);
+            setTimeout(()=>{
+                console.log("Filter Request Repeat");
+                queryFilter(query);
+            }, 1000);
+        });
+    }
+}
+function clearFilter() {
+    clearNotify();
+    (0, _appstate.APPSTATE).pageManagerFocused = (0, _appstate.APPSTATE).pageManager;
+    (0, _appstate.APPSTATE).paginator.setPageManager((0, _appstate.APPSTATE).pageManagerFocused);
+    (0, _utils.appendPageToDocument)((0, _appstate.APPSTATE).pageManagerFocused.getFirstPage());
+}
+function clearNotify() {
+    const notifyPlace = document.querySelector(".notify-place");
+    while(notifyPlace.firstChild)notifyPlace.removeChild(notifyPlace.firstChild);
+}
+function closeFilterNotifyAction(nameNotify) {
+    clearFilter();
 }
 
-},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./appstate/appstate":"eMp2h","./components/loader/loader":"f3fYZ","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./utils/utils":"cuzta","./components/paginator/paginator":"2HLYK","./page_manager":"j7Bvv","./filter/filter":"kDsV9"}],"e5BwA":[function(require,module,exports) {
+},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./appstate/appstate":"eMp2h","./components/loader/loader":"f3fYZ","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./utils/utils":"cuzta","./components/paginator/paginator":"2HLYK","./page_manager":"j7Bvv","./filter/filter":"kDsV9","./notyfy/notify":"caUfU"}],"e5BwA":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getDataFromApi", ()=>getDataFromApi);
@@ -1558,11 +1584,11 @@ const APPSTATE = {
     apiURL: "https://api.valantis.store:41000/",
     password: "Valantis",
     loadOffset: 0,
-    loadLimit: 70,
+    loadLimit: 100,
     productsOnPage: 50,
     pageManager: null,
     filterPageManager: null,
-    pagesOnServer: 265 // 264 * 49 + 18 = 12_954
+    pageManagerFocused: null
 };
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hUXUM":[function(require,module,exports) {
@@ -1692,7 +1718,6 @@ function renderTemplate() {
             align-items: center;
             z-index:10;
             color:white;
-            pointer-events: none;
             user-select: none;
         }
 
@@ -1787,6 +1812,7 @@ parcelHelpers.export(exports, "clearDublicateID", ()=>clearDublicateID);
 parcelHelpers.export(exports, "clearDublicateProduct", ()=>clearDublicateProduct);
 parcelHelpers.export(exports, "shiftOffset", ()=>shiftOffset);
 parcelHelpers.export(exports, "appendPageToDocument", ()=>appendPageToDocument);
+parcelHelpers.export(exports, "isQueryEmpty", ()=>isQueryEmpty);
 var _appstate = require("../appstate/appstate");
 function clearDublicateID(data) {
     return [
@@ -1814,6 +1840,15 @@ function appendPageToDocument(page) {
         return true;
     }
     return false;
+}
+function isQueryEmpty(query) {
+    let isEmpty = true;
+    [
+        ...query.values()
+    ].forEach((item)=>{
+        if (item) isEmpty = false;
+    });
+    return isEmpty;
 }
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","../appstate/appstate":"eMp2h"}],"2HLYK":[function(require,module,exports) {
@@ -1906,12 +1941,9 @@ function renderTemplate(position) {
                 gap: 0.5rem;
                 background: rgb(250, 250, 250);
                 min-width: 100px;
-                width: 120px;
-                min-height: 50px;
-                margin: 1rem;
+                min-height: 30px;
                 border: 3px solid rgb(100, 100, 100);
                 border-radius:1rem;
-                
                 padding: 1rem;
             }
             .position{
@@ -2004,29 +2036,35 @@ class PageManager {
         this.cursor = this.pages.length - 1;
         return this.pages[this.pages.length - 1];
     };
-    nextPage = ()=>{
-        if (this.cursor <= this.pages.length - 1) {
-            this.cursor += 1;
-            return this.getPageByIndex(this.cursor);
-        } else return this.getLastPage();
-    };
-    previewPage = ()=>{
-        if (this.cursor >= 0) {
-            this.cursor -= 1;
-            return this.getPageByIndex(this.cursor);
-        } else return this.getFirstPage();
-    };
+    // nextPage = () => {
+    //     if (this.cursor <= this.pages.length - 1) {
+    //         this.cursor += 1;
+    //         return this.getPageByIndex(this.cursor);
+    //     } else {
+    //         return this.getLastPage();
+    //     }
+    // }
+    // previewPage = () => {
+    //     if (this.cursor >= 0) {
+    //         this.cursor -= 1;
+    //         return this.getPageByIndex(this.cursor);
+    //     } else {
+    //         return this.getFirstPage();
+    //     }
+    // }
     addSubscriber(fn) {
         this.subscribers.push(fn);
     }
     paginator = (position)=>{
         this.cursor = position;
-        console.log("Count: ", this.pagesCount);
+        console.log("Pag: ", position);
+        console.log(this.name, " Pages: ", this.pagesCount);
         if (this.cursor === this.pagesCount - 1) this.uploadDataEvent();
         this.notyfy();
     };
     notyfy = ()=>{
         this.subscribers.forEach((fn)=>{
+            console.log("Cur: ", this.cursor);
             fn(this.getPageByIndex(this.cursor));
         });
     };
@@ -2266,6 +2304,78 @@ function filterIntersect(data) {
     }
 }
 
-},{"../api/api":"e5BwA","../api/api_commands":"hUXUM","../utils/utils":"cuzta","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")
+},{"../api/api":"e5BwA","../api/api_commands":"hUXUM","../utils/utils":"cuzta","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"caUfU":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+class NotifyComponent extends HTMLElement {
+    root;
+    name;
+    content;
+    actions = new Array();
+    actionDescription;
+    constructor(name, content){
+        super();
+        this.name = name;
+        this.content = content;
+        this.root = this.attachShadow({
+            mode: "open"
+        });
+        this.root.innerHTML = renderTemplate(content);
+    }
+    connectedCallback() {
+        this.addEventListener("click", ()=>{
+            this.actions.forEach((fn)=>{
+                fn(this.name);
+            });
+        });
+    }
+    attachClickAction(fn, description) {
+        this.actions.push(fn);
+        this.style.cursor = "pointer";
+        if (description) {
+            this.actionDescription = description;
+            this.addEventListener("mouseenter", ()=>{
+                this.root.querySelector("span").innerText = this.actionDescription;
+            });
+            this.addEventListener("mouseleave", ()=>{
+                this.root.querySelector("span").innerText = this.content;
+            });
+        }
+    }
+    appendToDOM(parent) {
+        parent.appendChild(this);
+    }
+}
+exports.default = NotifyComponent;
+if (!customElements.get("nice2jm-notify")) customElements.define("nice2jm-notify", NotifyComponent);
+function renderTemplate(content) {
+    const html = `
+        <span>${content}</span>
+    `;
+    const css = `
+        <style>
+            :host{
+                display:flex;
+                flex-direction:row;
+                justify-content:center;
+                align-items:center;
+                min-width: 70px;
+                height:40px;
+                padding:1rem;
+                border:2px solid rgb(100,100,100);
+                border-radius:1rem;
+                background: rgb(50,50,10);                
+            }
+            span{
+                margin: 1rem;
+                color: rgb(200,200,200);
+                font:bold 1rem "Arial";
+            }
+        </style>
+    `;
+    return `${html}${css}`;
+}
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")
 
 //# sourceMappingURL=index.482d1c68.js.map

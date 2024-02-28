@@ -2,13 +2,13 @@ import { getDataFromApi } from "./api/api";
 import { APICOMMANDS } from "./api/api_commands";
 import { APPSTATE } from "./appstate/appstate";
 import { Product, QueryFilter } from "./types/app_types";
-import PageComponent from "./components/page/page";
 import Paginator from "./components/paginator/paginator";
 import PageManager from "./page_manager";
 import Loader from "./components/loader/loader";
 import FilterComponent from "./components/filter/filter";
 import { getFilterData } from "./filter/filter";
-import { appendPageToDocument, clearDublicateID, clearDublicateProduct, shiftOffset } from "./utils/utils";
+import { appendPageToDocument, clearDublicateID, clearDublicateProduct, isQueryEmpty, shiftOffset } from "./utils/utils";
+import NotifyComponent from "./notyfy/notify";
 
 
 window.addEventListener('load', async () => {
@@ -19,6 +19,7 @@ window.addEventListener('load', async () => {
     APPSTATE.loader.appendToDOM(APPSTATE.rootApp);
     APPSTATE.pageManager = new PageManager("main", uploadData);
     APPSTATE.pageManager.addSubscriber(appendPageToDocument);
+    APPSTATE.pageManagerFocused = APPSTATE.pageManager;
     APPSTATE.filterPageManager = new PageManager("filter", () => { console.log("Filter Update Page") });
     APPSTATE.filterPageManager.addSubscriber(appendPageToDocument);
     APPSTATE.paginator = new Paginator(APPSTATE.pageManager);
@@ -30,27 +31,9 @@ window.addEventListener('load', async () => {
     }).then((pageManager) => {
         APPSTATE.loader.show(false);
         return appendPageToDocument(pageManager.getFirstPage());
-    }).then((result) => {
-        APPSTATE.paginator.setEnabled(result);
     }).catch((err) => {
-        console.log("Get Product Error: ", err);
+        console.error("Get Product Error: ", err);
     });
-
-    // const responseIDs = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 10 }));
-    // console.log("IDs ---------------------");
-    // console.log(responseIDs.result);
-
-    // const products = await getDataFromApi(APICOMMANDS.getItems({ ids: [...responseIDs.result] }));
-    // console.log("Products ---------------------");
-    // console.log(products.result);
-
-    // const fields = await getDataFromApi(APICOMMANDS.getFields({ field: "brand", offset: 0, limit: 100 }));
-    // console.log("Fields ---------------------");
-    // console.log(fields.result);
-
-    // const filter = await getDataFromApi(APICOMMANDS.filter({ "price": 17500.00 }));
-    // console.log("Filter Price 17500.00 ---------------------");
-    // console.log(filter.result);
 });
 
 
@@ -62,7 +45,11 @@ function uploadData() {
     }).then(() => {
         APPSTATE.loader.show(false);
     }).catch((err) => {
-        console.log("Get Product Error: ", err);
+        console.error("Product Request Error: ", err);
+        setTimeout(() => {
+            console.log("Product Request Repeat")
+            uploadData();
+        }, 1000);
     });
 }
 async function getProductData(options: { offset: number, limit: number }) {
@@ -92,14 +79,50 @@ function fillPage(products: Array<Product>, pageManager: PageManager) {
 
 //Filter---------------
 async function queryFilter(query: QueryFilter) {
-    APPSTATE.loader.show(true);
-    APPSTATE.filterPageManager.clearState();
+    if (!isQueryEmpty(query)) {
+        clearNotify();
+        APPSTATE.loader.show(true);
+        APPSTATE.filterPageManager.clearState();
+        APPSTATE.pageManagerFocused = APPSTATE.filterPageManager;
+        getFilterData(query).then((products) => {
+            const notify = new NotifyComponent("result-notify", `всего ${products.length}`);
+            notify.appendToDOM(document.querySelector(".notify-place"));
+            return fillPage(clearDublicateProduct(products), APPSTATE.filterPageManager);
+        }).then((pageManager) => {
+            APPSTATE.loader.show(false);
+            APPSTATE.paginator.setPageManager(APPSTATE.filterPageManager);
+            if (pageManager.pagesCount > 0) {
+                return appendPageToDocument(pageManager.getFirstPage());
+            } else {
+                const notify = new NotifyComponent("not-found-notify", "Продукты не найдены");
+                return appendPageToDocument(notify)
+            }
+        }).then(() => {
+            const notify = new NotifyComponent("filter-mode-notify", "Фильтр");
+            notify.attachClickAction(closeFilterNotifyAction, "Закрыть");
+            notify.appendToDOM(document.querySelector(".notify-place"));
+        }).catch((err) => {
+            console.error("Filter Request Error: ", err);
+            setTimeout(() => {
+                console.log("Filter Request Repeat")
+                queryFilter(query);
+            }, 1000);
+        });
+    }
+}
+function clearFilter() {
+    clearNotify();
+    APPSTATE.pageManagerFocused = APPSTATE.pageManager;
+    APPSTATE.paginator.setPageManager(APPSTATE.pageManagerFocused);
+    appendPageToDocument(APPSTATE.pageManagerFocused.getFirstPage());
+}
+function clearNotify() {
+    const notifyPlace = document.querySelector(".notify-place");
+    while (notifyPlace.firstChild) {
+        notifyPlace.removeChild(notifyPlace.firstChild);
+    }
+}
 
-    getFilterData(query).then((products) => {
-        return fillPage(clearDublicateProduct(products), APPSTATE.filterPageManager);
-    }).then((pageManager) => {
-        APPSTATE.loader.show(false);
-        APPSTATE.paginator.setPageManager(APPSTATE.filterPageManager);
-        return appendPageToDocument(pageManager.getFirstPage());
-    })
+function closeFilterNotifyAction(nameNotify: string) {
+    clearFilter();
 }

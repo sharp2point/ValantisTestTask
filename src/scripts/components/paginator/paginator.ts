@@ -93,12 +93,9 @@ function renderTemplate(position: number) {
                 gap: 0.5rem;
                 background: rgb(250, 250, 250);
                 min-width: 100px;
-                width: 120px;
-                min-height: 50px;
-                margin: 1rem;
+                min-height: 30px;
                 border: 3px solid rgb(100, 100, 100);
                 border-radius:1rem;
-                
                 padding: 1rem;
             }
             .position{
