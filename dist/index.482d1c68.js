@@ -2181,13 +2181,8 @@ async function getFilterData(query) {
     results.push(queryPromise(query, "brand"));
     results.push(queryPromise(query, "price"));
     return Promise.all(results).then((data)=>{
-        const allData = [];
-        data.forEach((res)=>{
-            if (res) allData.push([
-                ...res.result
-            ]);
-        });
-        return (0, _utils.clearDublicateID)(allData.flat(1));
+        const result = isEmptyData(data);
+        return filterIntersect(result);
     }).then((ids)=>{
         return (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
             ids: ids
@@ -2216,6 +2211,29 @@ async function queryPromise(query, key) {
             break;
     }
     if (query.has(key) && query.get(key)) return await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).filter(params));
+}
+function isEmptyData(data) {
+    const result = [];
+    data.forEach((el)=>{
+        if (el) result.push(el.result);
+    });
+    return result;
+}
+function filterIntersect(data) {
+    if (data.length === 0) return [];
+    else if (data.length === 1) return (0, _utils.clearDublicateID)(data[0]);
+    else {
+        let buf = [
+            ...data[0]
+        ];
+        const base = [
+            ...data.slice(1, data.length)
+        ];
+        base.forEach((d)=>{
+            buf = buf.filter((el)=>d.includes(el));
+        });
+        return buf;
+    }
 }
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","../api/api":"e5BwA","../api/api_commands":"hUXUM","../utils/utils":"cuzta"}],"cuzta":[function(require,module,exports) {

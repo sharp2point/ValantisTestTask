@@ -9,18 +9,13 @@ export async function getFilterData(query: QueryFilter) {
     results.push(queryPromise(query, "brand"));
     results.push(queryPromise(query, "price"));
     return Promise.all(results).then((data) => {
-                                        const allData = [];
-                                        data.forEach(res => {
-                                            if (res) {
-                                                allData.push([...res.result])
-                                            }
-                                        });
-                                        return clearDublicateID(allData.flat(1));
-                                    }).then((ids) => {
-                                        return getDataFromApi(APICOMMANDS.getItems({ ids: ids }));
-                                    }).then((products) => {
-                                        return clearDublicateProduct(products.result);
-                                    });
+        const result = isEmptyData(data);
+        return filterIntersect(result)
+    }).then((ids) => {
+        return getDataFromApi(APICOMMANDS.getItems({ ids: ids }));
+    }).then((products) => {
+        return clearDublicateProduct(products.result);
+    });
 }
 async function queryPromise(query: QueryFilter, key: string) {
     let params = null;
@@ -40,5 +35,28 @@ async function queryPromise(query: QueryFilter, key: string) {
     }
     if (query.has(key) && query.get(key)) {
         return await getDataFromApi(APICOMMANDS.filter(params));
+    }
+}
+function isEmptyData(data: Array<any>) {
+    const result = [];
+    data.forEach((el) => {
+        if (el) {
+            result.push(el.result);
+        }
+    });
+    return result;
+}
+function filterIntersect(data: Array<Array<string>>) {
+    if (data.length === 0) {
+        return [];
+    } else if (data.length === 1) {
+        return clearDublicateID(data[0]);;
+    } else {
+        let buf = [...data[0]] as Array<string>;
+        const base = [...data.slice(1, data.length)];
+        base.forEach((d: Array<string>) => {
+            buf = buf.filter(el => d.includes(el));
+        });
+        return buf;
     }
 }
