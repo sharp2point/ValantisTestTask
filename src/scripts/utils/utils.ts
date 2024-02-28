@@ -1,3 +1,5 @@
+import { APPSTATE } from "../appstate/appstate";
+import PageComponent from "../components/page/page";
 import { Product } from "../types/app_types";
 
 export function clearDublicateID(data: Array<string>) {
@@ -11,4 +13,15 @@ export function clearDublicateProduct(data: Array<Product>) {
         }
     });
     return [...idMap.values()];
+}
+export function shiftOffset() {
+    APPSTATE.loadOffset = APPSTATE.loadOffset + APPSTATE.loadLimit;
+}
+export function appendPageToDocument(page: PageComponent) {
+    const pagePlace = document.querySelector(".app-page");
+    if (pagePlace) {
+        pagePlace.replaceChildren(page);
+        return true;
+    }
+    return false;
 }

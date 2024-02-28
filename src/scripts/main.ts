@@ -8,7 +8,7 @@ import PageManager from "./page_manager";
 import Loader from "./components/loader/loader";
 import FilterComponent from "./components/filter/filter";
 import { getFilterData } from "./filter/filter";
-import { clearDublicateID, clearDublicateProduct } from "./utils/utils";
+import { appendPageToDocument, clearDublicateID, clearDublicateProduct, shiftOffset } from "./utils/utils";
 
 
 window.addEventListener('load', async () => {
@@ -17,9 +17,24 @@ window.addEventListener('load', async () => {
     APPSTATE.filter.addSubscriber(queryFilter);
     APPSTATE.loader = new Loader();
     APPSTATE.loader.appendToDOM(APPSTATE.rootApp);
+    APPSTATE.pageManager = new PageManager("main", uploadData);
+    APPSTATE.pageManager.addSubscriber(appendPageToDocument);
+    APPSTATE.filterPageManager = new PageManager("filter", () => { console.log("Filter Update Page") });
+    APPSTATE.filterPageManager.addSubscriber(appendPageToDocument);
+    APPSTATE.paginator = new Paginator(APPSTATE.pageManager);
+    APPSTATE.paginator.appendToDOM(document.querySelector(".paginator-place")!);
 
-    const { pageManager, paginator } = InitStateApp();
-    APPSTATE.pageManager = pageManager;
+    getProductData({ offset: APPSTATE.loadOffset, limit: APPSTATE.loadLimit }).then((products) => {
+        shiftOffset();
+        return fillPage(clearDublicateProduct(products), APPSTATE.pageManager);
+    }).then((pageManager) => {
+        APPSTATE.loader.show(false);
+        return appendPageToDocument(pageManager.getFirstPage());
+    }).then((result) => {
+        APPSTATE.paginator.setEnabled(result);
+    }).catch((err) => {
+        console.log("Get Product Error: ", err);
+    });
 
     // const responseIDs = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 10 }));
     // console.log("IDs ---------------------");
@@ -38,30 +53,6 @@ window.addEventListener('load', async () => {
     // console.log(filter.result);
 });
 
-function InitStateApp() {
-    const pageManager = new PageManager(uploadData);
-    pageManager.addSubscriber(appendPageToDocument);
-    const upPaginator = new Paginator(pageManager);
-    upPaginator.appendToDOM(document.querySelector(".paginator-place")!);
-    upPaginator.addSubscriber(pageManager.subsPaginator);
-
-    getProductData({ offset: APPSTATE.loadOffset, limit: APPSTATE.loadLimit }).then((products) => {
-        shiftOffset();
-        return fillPage(clearDublicateProduct(products), pageManager);
-    }).then((pageManager) => {
-        APPSTATE.loader.show(false);
-        return appendPageToDocument(pageManager.getFirstPage());
-    }).then((result) => {
-        upPaginator.setEnabled(result);
-    }).catch((err) => {
-        console.log("Get Product Error: ", err);
-    });
-
-    return {
-        pageManager: pageManager,
-        paginator: upPaginator,
-    }
-}
 
 function uploadData() {
     APPSTATE.loader.show(true);
@@ -74,7 +65,6 @@ function uploadData() {
         console.log("Get Product Error: ", err);
     });
 }
-//Data Products----------
 async function getProductData(options: { offset: number, limit: number }) {
     const ids_raw = await getDataFromApi(APICOMMANDS.getIDs({ offset: options.offset, limit: options.limit }));
     const ids = clearDublicateID(ids_raw.result);
@@ -82,7 +72,7 @@ async function getProductData(options: { offset: number, limit: number }) {
     return Promise.resolve(products.result);
 }
 function fillPage(products: Array<Product>, pageManager: PageManager) {
-    let page = pageVerifyOnRemainder(pageManager);
+    let page = pageManager.pageRemaind();
 
     for (let i = 0; i < products.length; i++) {
         const result = page.addProduct(products[i]);
@@ -98,33 +88,18 @@ function fillPage(products: Array<Product>, pageManager: PageManager) {
     }
     return pageManager;
 }
-function appendPageToDocument(page: PageComponent) {
-    const pagePlace = document.querySelector(".app-page");
-    if (pagePlace) {
-        pagePlace.replaceChildren(page);
-        return true;
-    }
-    return false;
-}
-function pageVerifyOnRemainder(pageManager: PageManager) {
-    return (pageManager.getLastPage() && pageManager.getLastPage().capasity > 0) ?
-        pageManager.getLastPage() :
-        new PageComponent(pageManager.pagesCount + 1, pageManager.pagesCount * APPSTATE.productsOnPage);
-}
-function shiftOffset() {
-    APPSTATE.loadOffset = APPSTATE.loadOffset + APPSTATE.loadLimit;
-}
+
+
 //Filter---------------
 async function queryFilter(query: QueryFilter) {
-    console.log(query)
-    const result = await getFilterData(query);
-    console.log(result);
-}
+    APPSTATE.loader.show(true);
+    APPSTATE.filterPageManager.clearState();
 
-// =====================================================
-
-
-async function getProductsByIDs(ids: Array<string>) {
-    const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids }));
-    return products;
+    getFilterData(query).then((products) => {
+        return fillPage(clearDublicateProduct(products), APPSTATE.filterPageManager);
+    }).then((pageManager) => {
+        APPSTATE.loader.show(false);
+        APPSTATE.paginator.setPageManager(APPSTATE.filterPageManager);
+        return appendPageToDocument(pageManager.getFirstPage());
+    })
 }

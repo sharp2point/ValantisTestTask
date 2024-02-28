@@ -9,7 +9,6 @@ export default class Paginator extends HTMLElement {
         leftButton: null,
         rightButton: null
     };
-    private subscribers = new Array<(position: number) => void>();
     //-----------------------------------------
     set position(position: number) {
         if (position < this.pageManager!.pagesCount) {
@@ -29,12 +28,9 @@ export default class Paginator extends HTMLElement {
         this.dom.position = this.root.querySelector(".position");
         this.dom.leftButton = this.root.querySelector(".left-button")!;
         this.dom.rightButton = this.root.querySelector(".right-button")!;
-        this.style.visibility = "hidden";
+        //this.style.visibility = "hidden";
     }
     connectedCallback() {
-        (this.dom.position! as HTMLElement).addEventListener("click", (e) => {
-
-        });
         (this.dom.leftButton! as HTMLElement).addEventListener("click", (e) => {
             this.previewPosition();
             this.updateTextPosition();
@@ -43,7 +39,7 @@ export default class Paginator extends HTMLElement {
         (this.dom.rightButton! as HTMLElement).addEventListener("click", (e) => {
             this.nextPosition();
             this.updateTextPosition();
-            this.notify()
+            this.notify();
         });
     }
     nextPosition() {
@@ -56,22 +52,22 @@ export default class Paginator extends HTMLElement {
             this.cursor -= 1;
         }
     }
-    addSubscriber(fn: (position: number) => void) {
-        this.subscribers.push(fn);
-    }
     appendToDOM(parent: HTMLElement) {
         parent.appendChild(this);
     }
-    setEnabled = (isEnable: boolean)=> {
-        isEnable ? this.style.visibility = "visible" : this.style.visibility = "hidden";
+    // setEnabled = (isEnable: boolean) => {
+    //     isEnable ? this.style.visibility = "visible" : this.style.visibility = "hidden";
+    // }
+    setPageManager = (pageManager: PageManager) => {
+        this.pageManager = pageManager;
+        this.cursor = 0;
+        this.updateTextPosition();
     }
     private updateTextPosition() {
         (this.dom.position! as HTMLElement).textContent = `${this.cursor + 1}`;
     }
     private notify() {
-        this.subscribers.forEach((fn) => {
-            fn(this.cursor)
-        })
+        this.pageManager.paginator(this.cursor);
     }
 }
 if (!customElements.get("nice2jm-page-paginator")) {

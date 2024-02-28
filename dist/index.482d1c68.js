@@ -583,8 +583,6 @@ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 var _api = require("./api/api");
 var _apiCommands = require("./api/api_commands");
 var _appstate = require("./appstate/appstate");
-var _page = require("./components/page/page");
-var _pageDefault = parcelHelpers.interopDefault(_page);
 var _paginator = require("./components/paginator/paginator");
 var _paginatorDefault = parcelHelpers.interopDefault(_paginator);
 var _pageManager = require("./page_manager");
@@ -599,8 +597,28 @@ window.addEventListener("load", async ()=>{
     (0, _appstate.APPSTATE).filter.addSubscriber(queryFilter);
     (0, _appstate.APPSTATE).loader = new (0, _loaderDefault.default)();
     (0, _appstate.APPSTATE).loader.appendToDOM((0, _appstate.APPSTATE).rootApp);
-    const { pageManager, paginator } = InitStateApp();
-    (0, _appstate.APPSTATE).pageManager = pageManager;
+    (0, _appstate.APPSTATE).pageManager = new (0, _pageManagerDefault.default)("main", uploadData);
+    (0, _appstate.APPSTATE).pageManager.addSubscriber((0, _utils.appendPageToDocument));
+    (0, _appstate.APPSTATE).filterPageManager = new (0, _pageManagerDefault.default)("filter", ()=>{
+        console.log("Filter Update Page");
+    });
+    (0, _appstate.APPSTATE).filterPageManager.addSubscriber((0, _utils.appendPageToDocument));
+    (0, _appstate.APPSTATE).paginator = new (0, _paginatorDefault.default)((0, _appstate.APPSTATE).pageManager);
+    (0, _appstate.APPSTATE).paginator.appendToDOM(document.querySelector(".paginator-place"));
+    getProductData({
+        offset: (0, _appstate.APPSTATE).loadOffset,
+        limit: (0, _appstate.APPSTATE).loadLimit
+    }).then((products)=>{
+        (0, _utils.shiftOffset)();
+        return fillPage((0, _utils.clearDublicateProduct)(products), (0, _appstate.APPSTATE).pageManager);
+    }).then((pageManager)=>{
+        (0, _appstate.APPSTATE).loader.show(false);
+        return (0, _utils.appendPageToDocument)(pageManager.getFirstPage());
+    }).then((result)=>{
+        (0, _appstate.APPSTATE).paginator.setEnabled(result);
+    }).catch((err)=>{
+        console.log("Get Product Error: ", err);
+    });
 // const responseIDs = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 10 }));
 // console.log("IDs ---------------------");
 // console.log(responseIDs.result);
@@ -614,38 +632,13 @@ window.addEventListener("load", async ()=>{
 // console.log("Filter Price 17500.00 ---------------------");
 // console.log(filter.result);
 });
-function InitStateApp() {
-    const pageManager = new (0, _pageManagerDefault.default)(uploadData);
-    pageManager.addSubscriber(appendPageToDocument);
-    const upPaginator = new (0, _paginatorDefault.default)(pageManager);
-    upPaginator.appendToDOM(document.querySelector(".paginator-place"));
-    upPaginator.addSubscriber(pageManager.subsPaginator);
-    getProductData({
-        offset: (0, _appstate.APPSTATE).loadOffset,
-        limit: (0, _appstate.APPSTATE).loadLimit
-    }).then((products)=>{
-        shiftOffset();
-        return fillPage((0, _utils.clearDublicateProduct)(products), pageManager);
-    }).then((pageManager)=>{
-        (0, _appstate.APPSTATE).loader.show(false);
-        return appendPageToDocument(pageManager.getFirstPage());
-    }).then((result)=>{
-        upPaginator.setEnabled(result);
-    }).catch((err)=>{
-        console.log("Get Product Error: ", err);
-    });
-    return {
-        pageManager: pageManager,
-        paginator: upPaginator
-    };
-}
 function uploadData() {
     (0, _appstate.APPSTATE).loader.show(true);
     getProductData({
         offset: (0, _appstate.APPSTATE).loadOffset,
         limit: (0, _appstate.APPSTATE).loadLimit
     }).then((products)=>{
-        shiftOffset();
+        (0, _utils.shiftOffset)();
         return fillPage((0, _utils.clearDublicateProduct)(products), (0, _appstate.APPSTATE).pageManager);
     }).then(()=>{
         (0, _appstate.APPSTATE).loader.show(false);
@@ -653,7 +646,6 @@ function uploadData() {
         console.log("Get Product Error: ", err);
     });
 }
-//Data Products----------
 async function getProductData(options) {
     const ids_raw = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getIDs({
         offset: options.offset,
@@ -666,7 +658,7 @@ async function getProductData(options) {
     return Promise.resolve(products.result);
 }
 function fillPage(products, pageManager) {
-    let page = pageVerifyOnRemainder(pageManager);
+    let page = pageManager.pageRemaind();
     for(let i = 0; i < products.length; i++){
         const result = page.addProduct(products[i]);
         if (i === products.length - 1) {
@@ -681,35 +673,20 @@ function fillPage(products, pageManager) {
     }
     return pageManager;
 }
-function appendPageToDocument(page) {
-    const pagePlace = document.querySelector(".app-page");
-    if (pagePlace) {
-        pagePlace.replaceChildren(page);
-        return true;
-    }
-    return false;
-}
-function pageVerifyOnRemainder(pageManager) {
-    return pageManager.getLastPage() && pageManager.getLastPage().capasity > 0 ? pageManager.getLastPage() : new (0, _pageDefault.default)(pageManager.pagesCount + 1, pageManager.pagesCount * (0, _appstate.APPSTATE).productsOnPage);
-}
-function shiftOffset() {
-    (0, _appstate.APPSTATE).loadOffset = (0, _appstate.APPSTATE).loadOffset + (0, _appstate.APPSTATE).loadLimit;
-}
 //Filter---------------
 async function queryFilter(query) {
-    console.log(query);
-    const result = await (0, _filter.getFilterData)(query);
-    console.log(result);
-}
-// =====================================================
-async function getProductsByIDs(ids) {
-    const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
-        ids: ids
-    }));
-    return products;
+    (0, _appstate.APPSTATE).loader.show(true);
+    (0, _appstate.APPSTATE).filterPageManager.clearState();
+    (0, _filter.getFilterData)(query).then((products)=>{
+        return fillPage((0, _utils.clearDublicateProduct)(products), (0, _appstate.APPSTATE).filterPageManager);
+    }).then((pageManager)=>{
+        (0, _appstate.APPSTATE).loader.show(false);
+        (0, _appstate.APPSTATE).paginator.setPageManager((0, _appstate.APPSTATE).filterPageManager);
+        return (0, _utils.appendPageToDocument)(pageManager.getFirstPage());
+    });
 }
 
-},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./appstate/appstate":"eMp2h","./components/page/page":"hCezX","./components/paginator/paginator":"2HLYK","./page_manager":"j7Bvv","./components/loader/loader":"f3fYZ","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./filter/filter":"kDsV9","./utils/utils":"cuzta"}],"e5BwA":[function(require,module,exports) {
+},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./appstate/appstate":"eMp2h","./components/loader/loader":"f3fYZ","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./utils/utils":"cuzta","./components/paginator/paginator":"2HLYK","./page_manager":"j7Bvv","./filter/filter":"kDsV9"}],"e5BwA":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getDataFromApi", ()=>getDataFromApi);
@@ -1577,12 +1554,14 @@ const APPSTATE = {
     rootApp: null,
     filter: null,
     loader: null,
+    paginator: null,
     apiURL: "https://api.valantis.store:41000/",
     password: "Valantis",
     loadOffset: 0,
     loadLimit: 70,
     productsOnPage: 50,
     pageManager: null,
+    filterPageManager: null,
     pagesOnServer: 265 // 264 * 49 + 18 = 12_954
 };
 
@@ -1639,373 +1618,6 @@ function getFields(params) {
         "params": params
     };
 }
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hCezX":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-var _product = require("../product/product");
-var _productDefault = parcelHelpers.interopDefault(_product);
-class PageComponent extends HTMLElement {
-    root;
-    _capasity = 50;
-    cachProducts = new Array();
-    _id = 0;
-    index_product = 0;
-    constructor(id, init_index_product){
-        super();
-        this._id = id;
-        this.index_product = init_index_product;
-        this.root = this.attachShadow({
-            mode: "open"
-        });
-        this.root.innerHTML = renderTemplate();
-        this.setAttribute("class", "page");
-    }
-    addProduct(product_data) {
-        if (this.capasity > 0) {
-            this.cachProducts.push(product_data);
-            const product = new (0, _productDefault.default)(this.index_product, product_data);
-            this.root.getRootNode().appendChild(product);
-            this._capasity -= 1;
-            this.index_product += 1;
-            return true;
-        } else return false;
-    }
-    get capasity() {
-        return this._capasity;
-    }
-    get pageId() {
-        return this._id;
-    }
-}
-exports.default = PageComponent;
-if (!customElements.get("nice2jm-page-products")) customElements.define("nice2jm-page-products", PageComponent);
-//-----------------------------------------------
-function renderTemplate() {
-    const html = `
-        
-    `;
-    const css = `
-        <style>
-            :host{
-                display:flex;
-                flex-direction:column;
-                justify-content: start;
-                align-items:center;
-                gap:0.1rem;
-                background:rgb(100,100,100);
-                width:100%;
-                margin:1rem;
-                border:3px solid rgb(150,150,150);
-            }
-        </style>
-    `;
-    return `${html}${css}`;
-}
-
-},{"../product/product":"gAdVN","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gAdVN":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-class ProductComponent extends HTMLElement {
-    root;
-    product = null;
-    _id = 0;
-    constructor(id, product){
-        super();
-        this._id = id;
-        this.product = product;
-        this.root = this.attachShadow({
-            mode: "open"
-        });
-        this.setAttribute("class", "product-cmp");
-        this.root.innerHTML = renderTemplate(this._id, this.product);
-    }
-}
-exports.default = ProductComponent;
-if (!customElements.get("nice2jm-product")) customElements.define("nice2jm-product", ProductComponent);
-//-----------------------------------------------
-function renderTemplate(id, product) {
-    const rid = `${id}`;
-    const lid = "".padStart(5 - rid.length, "0");
-    const isEvenID = id % 2 === 0 ? false : true;
-    const html = `   
-        <span class="id"><span class="lid">${lid}</span><span class="rid">${rid}</span></span>     
-        <span class="product-id">${product.id}</span>
-        <span class="brand">${product.brand}</span>
-        <span class="price">${product.price}</span>
-        <span class="product">${product.product}</span>
-    `;
-    const css = `
-        <style>
-            :host{
-                --odd-back-color:rgb(60,60,60);
-                --even-back-color:rgb(70,70,70);
-                display:flex;
-                flex-direction:row;
-                justify-content:space-between;
-                align-items: center;
-                flex-wrap:nowrap;
-                width:95%;
-                min-height:40px;
-                font:600 1rem "Arial";
-                border-bottom:1px solid rgb(100,100,100);
-                background: ${isEvenID ? "var(--even-back-color)" : "var(--odd-back-color)"};
-            }
-            span{
-                padding-inline:0.3rem;                
-                overflow:hidden;
-                white-space: nowrap;
-                text-overflow: ellipsis;  
-            }
-            span.id{          
-                display:flex;
-                flex-direction:row;                
-                justify-content:start;  
-                gap:0;    
-                flex-basis:6%;
-                border-right: 1px solid rgb(100,100,100);
-            }
-            span.id span{
-                margin:0;
-                padding:0;
-            }
-            span.id .lid{
-                border:none;
-                color:rgb(150,150,150);
-            }
-            span.id .rid{
-                border:none;
-                font-size:1.3rem;
-                color:rgb(220,150,100);
-            }
-            span.product-id{
-                color: rgb(220,220,0);
-                flex-basis:25%;  
-                border-right: 1px solid rgb(100,100,100);              
-            }
-            span.brand{
-                color: white;
-                flex-basis:10%;
-                border-right: 1px solid rgb(100,100,100);
-            }
-            span.price{
-                color: white;
-                flex-basis:5%;
-                border-right: 1px solid rgb(100,100,100);
-            }
-            span.product{
-                color: white;
-                flex-basis:50%;
-            }
-        </style>
-    `;
-    return `${html}${css}`;
-}
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"2HLYK":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-class Paginator extends HTMLElement {
-    root = null;
-    cursor = 0;
-    pageManager;
-    dom = {
-        position: null,
-        leftButton: null,
-        rightButton: null
-    };
-    subscribers = new Array();
-    //-----------------------------------------
-    set position(position) {
-        if (position < this.pageManager.pagesCount) this.cursor = position;
-    }
-    get position() {
-        return this.cursor;
-    }
-    //------------------------------------------
-    constructor(pageManager){
-        super();
-        this.pageManager = pageManager;
-        this.root = this.attachShadow({
-            mode: "open"
-        });
-        this.setAttribute("class", "page-paginator");
-        this.root.innerHTML = renderTemplate(this.cursor + 1);
-        this.dom.position = this.root.querySelector(".position");
-        this.dom.leftButton = this.root.querySelector(".left-button");
-        this.dom.rightButton = this.root.querySelector(".right-button");
-        this.style.visibility = "hidden";
-    }
-    connectedCallback() {
-        this.dom.position.addEventListener("click", (e)=>{});
-        this.dom.leftButton.addEventListener("click", (e)=>{
-            this.previewPosition();
-            this.updateTextPosition();
-            this.notify();
-        });
-        this.dom.rightButton.addEventListener("click", (e)=>{
-            this.nextPosition();
-            this.updateTextPosition();
-            this.notify();
-        });
-    }
-    nextPosition() {
-        if (this.cursor < this.pageManager.pagesCount - 1) this.cursor += 1;
-    }
-    previewPosition() {
-        if (this.cursor > 0) this.cursor -= 1;
-    }
-    addSubscriber(fn) {
-        this.subscribers.push(fn);
-    }
-    appendToDOM(parent) {
-        parent.appendChild(this);
-    }
-    setEnabled = (isEnable)=>{
-        isEnable ? this.style.visibility = "visible" : this.style.visibility = "hidden";
-    };
-    updateTextPosition() {
-        this.dom.position.textContent = `${this.cursor + 1}`;
-    }
-    notify() {
-        this.subscribers.forEach((fn)=>{
-            fn(this.cursor);
-        });
-    }
-}
-exports.default = Paginator;
-if (!customElements.get("nice2jm-page-paginator")) customElements.define("nice2jm-page-paginator", Paginator);
-function renderTemplate(position) {
-    const html = `
-        <div class="left-button button"></div>
-        <span class="position">${position}</span>
-        <div class="right-button button"></div>
-    `;
-    const css = `
-        <style>
-            :host {
-                --border-color: rgb(100,100,100);
-                --inaccess-border-color: rgb(150,150,150);
-                --text-color: rgb(100,100,100);
-                display: flex;
-                flex-direction: row;
-                justify-content: center;
-                align-items: center;
-                gap: 0.5rem;
-                background: rgb(250, 250, 250);
-                min-width: 100px;
-                width: 120px;
-                min-height: 50px;
-                margin: 1rem;
-                border: 3px solid rgb(100, 100, 100);
-                border-radius:1rem;
-                
-                padding: 1rem;
-            }
-            .position{
-                color: var(--text-color);
-                font:bold 1.5rem "Arial";
-            }
-            .button {
-                width: 40px;
-                height: 40px;
-                background-color: transparent;
-                cursor: pointer;
-            }
-
-            .left-button::before {
-                position: absolute;
-                display: block;
-                content: "";
-                width: 10px;
-                height: 10px;
-                border-left: 5px solid var(--border-color);
-                border-top: 5px solid var(--border-color);
-                transform: translate(15px,12px) rotate(-45deg);
-            }
-
-            .right-button::after {
-                display: block;
-                position:absolute;
-                content: "";
-                width: 10px;
-                height: 10px;
-                border-right: 5px solid var(--border-color);
-                border-top: 5px solid var(--border-color);
-                transform: translate(10px,12px) rotate(45deg);
-            }
-
-            .inaccess::before{
-                border-left: 5px solid var(--inaccess-border-color);
-                border-top: 5px solid var(--inaccess-border-color);
-            }
-            .inaccess::after{
-                border-right: 5px solid var(--inaccess-border-color);
-                border-top: 5px solid var(--inaccess-border-color);
-            }
-        </style>
-    `;
-    return `${html}${css}`;
-}
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"j7Bvv":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-class PageManager {
-    pages = new Array();
-    _pageCount = 0;
-    cursor = 0;
-    subscribers = new Array();
-    uploadDataEvent;
-    get pagesCount() {
-        return this._pageCount;
-    }
-    constructor(uploadDataEvent){
-        this.uploadDataEvent = uploadDataEvent;
-    }
-    addPage(page) {
-        this.pages.push(page);
-        this._pageCount += 1;
-    }
-    getPageByIndex = (index)=>{
-        this.cursor = index;
-        return this.pages[index];
-    };
-    getFirstPage = ()=>{
-        this.cursor = 0;
-        return this.pages[0];
-    };
-    getLastPage = ()=>{
-        this.cursor = this.pages.length - 1;
-        return this.pages[this.pages.length - 1];
-    };
-    nextPage = ()=>{
-        if (this.cursor <= this.pages.length - 1) {
-            this.cursor += 1;
-            return this.getPageByIndex(this.cursor);
-        } else return this.getLastPage();
-    };
-    previewPage = ()=>{
-        if (this.cursor >= 0) {
-            this.cursor -= 1;
-            return this.getPageByIndex(this.cursor);
-        } else return this.getFirstPage();
-    };
-    addSubscriber(fn) {
-        this.subscribers.push(fn);
-    }
-    subsPaginator = (position)=>{
-        this.cursor = position;
-        if (this.cursor === this.pagesCount - 1) this.uploadDataEvent();
-        this.notyfy();
-    };
-    notyfy = ()=>{
-        this.subscribers.forEach((fn)=>{
-            fn(this.getPageByIndex(this.cursor));
-        });
-    };
-}
-exports.default = PageManager;
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"f3fYZ":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
@@ -2168,6 +1780,424 @@ function renderTemplate() {
     return `${html}${css}`;
 }
 
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"cuzta":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "clearDublicateID", ()=>clearDublicateID);
+parcelHelpers.export(exports, "clearDublicateProduct", ()=>clearDublicateProduct);
+parcelHelpers.export(exports, "shiftOffset", ()=>shiftOffset);
+parcelHelpers.export(exports, "appendPageToDocument", ()=>appendPageToDocument);
+var _appstate = require("../appstate/appstate");
+function clearDublicateID(data) {
+    return [
+        ...new Set([
+            ...data
+        ])
+    ];
+}
+function clearDublicateProduct(data) {
+    const idMap = new Map();
+    data.forEach((product)=>{
+        if (!idMap.get(product.id)) idMap.set(product.id, product);
+    });
+    return [
+        ...idMap.values()
+    ];
+}
+function shiftOffset() {
+    (0, _appstate.APPSTATE).loadOffset = (0, _appstate.APPSTATE).loadOffset + (0, _appstate.APPSTATE).loadLimit;
+}
+function appendPageToDocument(page) {
+    const pagePlace = document.querySelector(".app-page");
+    if (pagePlace) {
+        pagePlace.replaceChildren(page);
+        return true;
+    }
+    return false;
+}
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","../appstate/appstate":"eMp2h"}],"2HLYK":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+class Paginator extends HTMLElement {
+    root = null;
+    cursor = 0;
+    pageManager;
+    dom = {
+        position: null,
+        leftButton: null,
+        rightButton: null
+    };
+    //-----------------------------------------
+    set position(position) {
+        if (position < this.pageManager.pagesCount) this.cursor = position;
+    }
+    get position() {
+        return this.cursor;
+    }
+    //------------------------------------------
+    constructor(pageManager){
+        super();
+        this.pageManager = pageManager;
+        this.root = this.attachShadow({
+            mode: "open"
+        });
+        this.setAttribute("class", "page-paginator");
+        this.root.innerHTML = renderTemplate(this.cursor + 1);
+        this.dom.position = this.root.querySelector(".position");
+        this.dom.leftButton = this.root.querySelector(".left-button");
+        this.dom.rightButton = this.root.querySelector(".right-button");
+    //this.style.visibility = "hidden";
+    }
+    connectedCallback() {
+        this.dom.leftButton.addEventListener("click", (e)=>{
+            this.previewPosition();
+            this.updateTextPosition();
+            this.notify();
+        });
+        this.dom.rightButton.addEventListener("click", (e)=>{
+            this.nextPosition();
+            this.updateTextPosition();
+            this.notify();
+        });
+    }
+    nextPosition() {
+        if (this.cursor < this.pageManager.pagesCount - 1) this.cursor += 1;
+    }
+    previewPosition() {
+        if (this.cursor > 0) this.cursor -= 1;
+    }
+    appendToDOM(parent) {
+        parent.appendChild(this);
+    }
+    // setEnabled = (isEnable: boolean) => {
+    //     isEnable ? this.style.visibility = "visible" : this.style.visibility = "hidden";
+    // }
+    setPageManager = (pageManager)=>{
+        this.pageManager = pageManager;
+        this.cursor = 0;
+        this.updateTextPosition();
+    };
+    updateTextPosition() {
+        this.dom.position.textContent = `${this.cursor + 1}`;
+    }
+    notify() {
+        this.pageManager.paginator(this.cursor);
+    }
+}
+exports.default = Paginator;
+if (!customElements.get("nice2jm-page-paginator")) customElements.define("nice2jm-page-paginator", Paginator);
+function renderTemplate(position) {
+    const html = `
+        <div class="left-button button"></div>
+        <span class="position">${position}</span>
+        <div class="right-button button"></div>
+    `;
+    const css = `
+        <style>
+            :host {
+                --border-color: rgb(100,100,100);
+                --inaccess-border-color: rgb(150,150,150);
+                --text-color: rgb(100,100,100);
+                display: flex;
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;
+                gap: 0.5rem;
+                background: rgb(250, 250, 250);
+                min-width: 100px;
+                width: 120px;
+                min-height: 50px;
+                margin: 1rem;
+                border: 3px solid rgb(100, 100, 100);
+                border-radius:1rem;
+                
+                padding: 1rem;
+            }
+            .position{
+                color: var(--text-color);
+                font:bold 1.5rem "Arial";
+            }
+            .button {
+                width: 40px;
+                height: 40px;
+                background-color: transparent;
+                cursor: pointer;
+            }
+
+            .left-button::before {
+                position: absolute;
+                display: block;
+                content: "";
+                width: 10px;
+                height: 10px;
+                border-left: 5px solid var(--border-color);
+                border-top: 5px solid var(--border-color);
+                transform: translate(15px,12px) rotate(-45deg);
+            }
+
+            .right-button::after {
+                display: block;
+                position:absolute;
+                content: "";
+                width: 10px;
+                height: 10px;
+                border-right: 5px solid var(--border-color);
+                border-top: 5px solid var(--border-color);
+                transform: translate(10px,12px) rotate(45deg);
+            }
+
+            .inaccess::before{
+                border-left: 5px solid var(--inaccess-border-color);
+                border-top: 5px solid var(--inaccess-border-color);
+            }
+            .inaccess::after{
+                border-right: 5px solid var(--inaccess-border-color);
+                border-top: 5px solid var(--inaccess-border-color);
+            }
+        </style>
+    `;
+    return `${html}${css}`;
+}
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"j7Bvv":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _appstate = require("./appstate/appstate");
+var _page = require("./components/page/page");
+var _pageDefault = parcelHelpers.interopDefault(_page);
+class PageManager {
+    pages = new Array();
+    _pageCount = 0;
+    cursor = 0;
+    subscribers = new Array();
+    uploadDataEvent = ()=>{};
+    _name;
+    get name() {
+        return this._name;
+    }
+    get pagesCount() {
+        return this._pageCount;
+    }
+    constructor(name, uploadDataEvent){
+        this._name = name;
+        if (uploadDataEvent) this.uploadDataEvent = uploadDataEvent;
+    }
+    clearState() {
+        this.pages = [];
+        this._pageCount = 0;
+        this.cursor = 0;
+    }
+    addPage(page) {
+        this.pages.push(page);
+        this._pageCount += 1;
+    }
+    getPageByIndex = (index)=>{
+        this.cursor = index;
+        return this.pages[index];
+    };
+    getFirstPage = ()=>{
+        this.cursor = 0;
+        return this.pages[0];
+    };
+    getLastPage = ()=>{
+        this.cursor = this.pages.length - 1;
+        return this.pages[this.pages.length - 1];
+    };
+    nextPage = ()=>{
+        if (this.cursor <= this.pages.length - 1) {
+            this.cursor += 1;
+            return this.getPageByIndex(this.cursor);
+        } else return this.getLastPage();
+    };
+    previewPage = ()=>{
+        if (this.cursor >= 0) {
+            this.cursor -= 1;
+            return this.getPageByIndex(this.cursor);
+        } else return this.getFirstPage();
+    };
+    addSubscriber(fn) {
+        this.subscribers.push(fn);
+    }
+    paginator = (position)=>{
+        this.cursor = position;
+        console.log("Count: ", this.pagesCount);
+        if (this.cursor === this.pagesCount - 1) this.uploadDataEvent();
+        this.notyfy();
+    };
+    notyfy = ()=>{
+        this.subscribers.forEach((fn)=>{
+            fn(this.getPageByIndex(this.cursor));
+        });
+    };
+    pageRemaind = ()=>{
+        return this.getLastPage() && this.getLastPage().capasity > 0 ? this.getLastPage() : new (0, _pageDefault.default)(this.pagesCount + 1, this.pagesCount * (0, _appstate.APPSTATE).productsOnPage);
+    };
+}
+exports.default = PageManager;
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./components/page/page":"hCezX","./appstate/appstate":"eMp2h"}],"hCezX":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _product = require("../product/product");
+var _productDefault = parcelHelpers.interopDefault(_product);
+class PageComponent extends HTMLElement {
+    root;
+    _capasity = 50;
+    cachProducts = new Array();
+    _id = 0;
+    index_product = 0;
+    constructor(id, init_index_product){
+        super();
+        this._id = id;
+        this.index_product = init_index_product;
+        this.root = this.attachShadow({
+            mode: "open"
+        });
+        this.root.innerHTML = renderTemplate();
+        this.setAttribute("class", "page");
+    }
+    addProduct(product_data) {
+        if (this.capasity > 0) {
+            this.cachProducts.push(product_data);
+            const product = new (0, _productDefault.default)(this.index_product, product_data);
+            this.root.getRootNode().appendChild(product);
+            this._capasity -= 1;
+            this.index_product += 1;
+            return true;
+        } else return false;
+    }
+    get capasity() {
+        return this._capasity;
+    }
+    get pageId() {
+        return this._id;
+    }
+}
+exports.default = PageComponent;
+if (!customElements.get("nice2jm-page-products")) customElements.define("nice2jm-page-products", PageComponent);
+//-----------------------------------------------
+function renderTemplate() {
+    const html = `
+        
+    `;
+    const css = `
+        <style>
+            :host{
+                display:flex;
+                flex-direction:column;
+                justify-content: start;
+                align-items:center;
+                gap:0.1rem;
+                background:rgb(100,100,100);
+                width:100%;
+                margin:1rem;
+                border:3px solid rgb(150,150,150);
+            }
+        </style>
+    `;
+    return `${html}${css}`;
+}
+
+},{"../product/product":"gAdVN","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gAdVN":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+class ProductComponent extends HTMLElement {
+    root;
+    product = null;
+    _id = 0;
+    constructor(id, product){
+        super();
+        this._id = id;
+        this.product = product;
+        this.root = this.attachShadow({
+            mode: "open"
+        });
+        this.setAttribute("class", "product-cmp");
+        this.root.innerHTML = renderTemplate(this._id, this.product);
+    }
+}
+exports.default = ProductComponent;
+if (!customElements.get("nice2jm-product")) customElements.define("nice2jm-product", ProductComponent);
+//-----------------------------------------------
+function renderTemplate(id, product) {
+    const rid = `${id}`;
+    const lid = "".padStart(5 - rid.length, "0");
+    const isEvenID = id % 2 === 0 ? false : true;
+    const html = `   
+        <span class="id"><span class="lid">${lid}</span><span class="rid">${rid}</span></span>     
+        <span class="product-id">${product.id}</span>
+        <span class="brand">${product.brand}</span>
+        <span class="price">${product.price}</span>
+        <span class="product">${product.product}</span>
+    `;
+    const css = `
+        <style>
+            :host{
+                --odd-back-color:rgb(60,60,60);
+                --even-back-color:rgb(70,70,70);
+                display:flex;
+                flex-direction:row;
+                justify-content:space-between;
+                align-items: center;
+                flex-wrap:nowrap;
+                width:95%;
+                min-height:40px;
+                font:600 1rem "Arial";
+                border-bottom:1px solid rgb(100,100,100);
+                background: ${isEvenID ? "var(--even-back-color)" : "var(--odd-back-color)"};
+            }
+            span{
+                padding-inline:0.3rem;                
+                overflow:hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;  
+            }
+            span.id{          
+                display:flex;
+                flex-direction:row;                
+                justify-content:start;  
+                gap:0;    
+                flex-basis:6%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.id span{
+                margin:0;
+                padding:0;
+            }
+            span.id .lid{
+                border:none;
+                color:rgb(150,150,150);
+            }
+            span.id .rid{
+                border:none;
+                font-size:1.3rem;
+                color:rgb(220,150,100);
+            }
+            span.product-id{
+                color: rgb(220,220,0);
+                flex-basis:25%;  
+                border-right: 1px solid rgb(100,100,100);              
+            }
+            span.brand{
+                color: white;
+                flex-basis:10%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.price{
+                color: white;
+                flex-basis:5%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.product{
+                color: white;
+                flex-basis:50%;
+            }
+        </style>
+    `;
+    return `${html}${css}`;
+}
+
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"kDsV9":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
@@ -2236,28 +2266,6 @@ function filterIntersect(data) {
     }
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","../api/api":"e5BwA","../api/api_commands":"hUXUM","../utils/utils":"cuzta"}],"cuzta":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "clearDublicateID", ()=>clearDublicateID);
-parcelHelpers.export(exports, "clearDublicateProduct", ()=>clearDublicateProduct);
-function clearDublicateID(data) {
-    return [
-        ...new Set([
-            ...data
-        ])
-    ];
-}
-function clearDublicateProduct(data) {
-    const idMap = new Map();
-    data.forEach((product)=>{
-        if (!idMap.get(product.id)) idMap.set(product.id, product);
-    });
-    return [
-        ...idMap.values()
-    ];
-}
-
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")
+},{"../api/api":"e5BwA","../api/api_commands":"hUXUM","../utils/utils":"cuzta","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")
 
 //# sourceMappingURL=index.482d1c68.js.map

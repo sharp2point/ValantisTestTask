@@ -1,3 +1,4 @@
+import { APPSTATE } from "./appstate/appstate";
 import PageComponent from "./components/page/page";
 
 export default class PageManager {
@@ -5,16 +6,27 @@ export default class PageManager {
     private _pageCount = 0;
     private cursor = 0;
     private subscribers = new Array<(page: PageComponent) => void>();
-    private uploadDataEvent: (() => void);
+    private uploadDataEvent = () => { };
+    private _name: string;
 
+    get name() {
+        return this._name;
+    }
     get pagesCount() {
         return this._pageCount;
     }
 
-    constructor(uploadDataEvent: () => void) {
-        this.uploadDataEvent = uploadDataEvent;
+    constructor(name: string, uploadDataEvent?: () => void) {
+        this._name = name;
+        if (uploadDataEvent) {
+            this.uploadDataEvent = uploadDataEvent;
+        }
     }
-
+    clearState() {
+        this.pages = [];
+        this._pageCount = 0;
+        this.cursor = 0;
+    }
     addPage(page: PageComponent) {
         this.pages.push(page);
         this._pageCount += 1;
@@ -50,8 +62,9 @@ export default class PageManager {
     addSubscriber(fn: (page: PageComponent) => void) {
         this.subscribers.push(fn);
     }
-    subsPaginator = (position: number) => {
+    paginator = (position: number) => {
         this.cursor = position;
+        console.log("Count: ", this.pagesCount)
         if (this.cursor === this.pagesCount - 1) {
             this.uploadDataEvent();
         }
@@ -61,6 +74,11 @@ export default class PageManager {
         this.subscribers.forEach((fn) => {
             fn(this.getPageByIndex(this.cursor));
         })
+    }
+    pageRemaind = () => {
+        return (this.getLastPage() && this.getLastPage().capasity > 0) ?
+            this.getLastPage() :
+            new PageComponent(this.pagesCount + 1, this.pagesCount * APPSTATE.productsOnPage);
     }
 
 }
