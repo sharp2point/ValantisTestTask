@@ -24,26 +24,6 @@
   display: flex;
 }
 
-.app-filter > form {
-  color: #c8c8c8;
-  background: #32323c;
-  flex-direction: row;
-  justify-content: space-evenly;
-  align-items: center;
-  width: 100%;
-  min-height: 50px;
-  display: flex;
-
-  & label {
-    font: 600 1.2rem Arial;
-  }
-
-  & button[type="submit"] {
-    padding: .5rem;
-    font: 600 1.2rem Arial;
-  }
-}
-
 .inaccess {
   pointer-events: none;
   color: #6464641a;

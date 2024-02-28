@@ -1,18 +1,23 @@
 import { getDataFromApi } from "./api/api";
 import { APICOMMANDS } from "./api/api_commands";
 import { APPSTATE } from "./appstate/appstate";
-import { Product } from "./types/app_types";
+import { Product, QueryFilter } from "./types/app_types";
 import PageComponent from "./components/page/page";
 import Paginator from "./components/paginator/paginator";
 import PageManager from "./page_manager";
 import Loader from "./components/loader/loader";
+import FilterComponent from "./components/filter/filter";
+import { getFilterData } from "./filter/filter";
+import { clearDublicateID, clearDublicateProduct } from "./utils/utils";
 
 
 window.addEventListener('load', async () => {
     APPSTATE.rootApp = document.querySelector("#app");
+    APPSTATE.filter = document.querySelector('.filter') as FilterComponent;
+    APPSTATE.filter.addSubscriber(queryFilter);
     APPSTATE.loader = new Loader();
     APPSTATE.loader.appendToDOM(APPSTATE.rootApp);
-    
+
     const { pageManager, paginator } = InitStateApp();
     APPSTATE.pageManager = pageManager;
 
@@ -34,8 +39,6 @@ window.addEventListener('load', async () => {
 });
 
 function InitStateApp() {
-    initFilter();
-
     const pageManager = new PageManager(uploadData);
     pageManager.addSubscriber(appendPageToDocument);
     const upPaginator = new Paginator(pageManager);
@@ -78,7 +81,6 @@ async function getProductData(options: { offset: number, limit: number }) {
     const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids }));
     return Promise.resolve(products.result);
 }
-
 function fillPage(products: Array<Product>, pageManager: PageManager) {
     let page = pageVerifyOnRemainder(pageManager);
 
@@ -96,7 +98,6 @@ function fillPage(products: Array<Product>, pageManager: PageManager) {
     }
     return pageManager;
 }
-
 function appendPageToDocument(page: PageComponent) {
     const pagePlace = document.querySelector(".app-page");
     if (pagePlace) {
@@ -114,103 +115,16 @@ function shiftOffset() {
     APPSTATE.loadOffset = APPSTATE.loadOffset + APPSTATE.loadLimit;
 }
 //Filter---------------
-
-function initFilter() {
-    const filterForm = document.querySelector("#filter-form");
-    if (filterForm && filterForm instanceof HTMLFormElement) {
-        filterForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            submitDebounce(filterForm);
-        });
-    }
+async function queryFilter(query: QueryFilter) {
+    console.log(query)
+    const result = await getFilterData(query);
+    console.log(result);
 }
 
-/*
-    submitDebounce(filterForm: HTMLFormElement) - функция блокирует кнопку Submit на время запроса + 1сек
-*/
-function submitDebounce(filterForm: HTMLFormElement) {
-    const filterFormSubmit = document.querySelector("#filter-form>button[type=submit]") as HTMLButtonElement;
-    filterFormSubmit.classList.add("inaccess");
-    onFormSubmit(filterForm).then((data) => {
-        const ids_data = crossFilterData(data);
-        return getProductsByIDs(ids_data);
-    }).then((data) => {
-        console.log(data.result)
-        //---------------------------------------------//
-        blockedSubmitFilterForm(filterFormSubmit, 1000)
-    }).catch((err) => {
-        console.log("Error: ", err);
-        blockedSubmitFilterForm(filterFormSubmit, 1000)
-    })
-}
-async function onFormSubmit(form: HTMLFormElement) {
-    const results = new Array<Promise<any>>();
-    [...form.elements].forEach((input: HTMLFormElement) => {
-        if (input.value) {
-            const res = filteringData(input.name, input.value);
-            results.push(res);
-        }
-    });
-    return Promise.all(results)
-}
-async function filteringData(filterName: string, filterValue: string) {
-    let result;
-    switch (filterName) {
-        case "product": {
-            result = await getDataFromApi(APICOMMANDS.filter({ "product": filterValue }));
-            break;
-        }
-        case "brand": {
-            result = await getDataFromApi(APICOMMANDS.filter({ "brand": filterValue }));
-            break;
-        }
-        case "price": {
-            result = await getDataFromApi(APICOMMANDS.filter({ "price": parseFloat(filterValue) }));
-            break;
-        }
-        default: {
-            result = Promise.reject(() => {
-                throw Error("Error: Ошибка фильтрации")
-            });
-            break;
-        }
-    }
-    return result;
-}
+// =====================================================
+
+
 async function getProductsByIDs(ids: Array<string>) {
     const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids }));
     return products;
-}
-//-----------------------------------------------------------------
-function crossFilterData(arrays: Array<Array<string>>) {
-    if (arrays.length === 1) {
-        return arrays[0];
-    } else if (arrays.length === 2) {
-        return crossTwoData(arrays[0], arrays[1]);
-    } else if (arrays.length == 3) {
-        const tmp = crossTwoData(arrays[0], arrays[1]);
-        return crossTwoData(tmp, arrays[2]);
-    } else {
-        return [];
-    }
-}
-function crossTwoData(data1: Array<string>, data2: Array<string>) {
-    return data1.filter((el) => data2.includes(el));
-}
-function blockedSubmitFilterForm(submitButton: HTMLButtonElement, timeout: number) {
-    setTimeout(() => {
-        submitButton.classList.remove("inaccess");
-    }, timeout);
-}
-function clearDublicateID(data: Array<string>) {
-    return [...new Set([...data])];
-}
-function clearDublicateProduct(data: Array<Product>) {
-    const idMap = new Map<string, Product>();
-    data.forEach((product) => {
-        if (!idMap.get(product.id)) {
-            idMap.set(product.id, product);
-        }
-    });
-    return [...idMap.values()];
 }

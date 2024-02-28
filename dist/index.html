@@ -5,27 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Valantis API Test</title>
     <link rel="stylesheet" href="/index.4ee4707b.css">
+    <script src="/index.009cc666.js" defer=""></script>
 </head>
 <body>
     <div id="app">
-        <div class="app-filter filter">
-            <form id="filter-form" action="">
-                <label for="product">
-                    Название продукта:
-                    <input type="text" name="product" id="product" placeholder="Золотое кольцо">
-                </label>
-                <label for="brand">
-                    Бренд:
-                    <input type="text" name="brand" id="brand" placeholder="Piaget">
-                </label>
-                <label for="price">
-                    Цена:
-                    <input type="text" name="price" id="price" placeholder="17500">
-                </label>
-                
-                <button type="submit">Поиск</button>
-            </form>
-        </div>
+        <nice2jm-filter class="filter"></nice2jm-filter>
         <div class="paginator-place"></div>
         <div class="app-page"></div>        
     </div>

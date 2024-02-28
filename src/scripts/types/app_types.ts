@@ -4,3 +4,4 @@ export type Product = {
     price: number,
     product: string
 }
+export type QueryFilter = Map<string, string | number>;

@@ -591,8 +591,12 @@ var _pageManager = require("./page_manager");
 var _pageManagerDefault = parcelHelpers.interopDefault(_pageManager);
 var _loader = require("./components/loader/loader");
 var _loaderDefault = parcelHelpers.interopDefault(_loader);
+var _filter = require("./filter/filter");
+var _utils = require("./utils/utils");
 window.addEventListener("load", async ()=>{
     (0, _appstate.APPSTATE).rootApp = document.querySelector("#app");
+    (0, _appstate.APPSTATE).filter = document.querySelector(".filter");
+    (0, _appstate.APPSTATE).filter.addSubscriber(queryFilter);
     (0, _appstate.APPSTATE).loader = new (0, _loaderDefault.default)();
     (0, _appstate.APPSTATE).loader.appendToDOM((0, _appstate.APPSTATE).rootApp);
     const { pageManager, paginator } = InitStateApp();
@@ -611,7 +615,6 @@ window.addEventListener("load", async ()=>{
 // console.log(filter.result);
 });
 function InitStateApp() {
-    initFilter();
     const pageManager = new (0, _pageManagerDefault.default)(uploadData);
     pageManager.addSubscriber(appendPageToDocument);
     const upPaginator = new (0, _paginatorDefault.default)(pageManager);
@@ -622,7 +625,7 @@ function InitStateApp() {
         limit: (0, _appstate.APPSTATE).loadLimit
     }).then((products)=>{
         shiftOffset();
-        return fillPage(clearDublicateProduct(products), pageManager);
+        return fillPage((0, _utils.clearDublicateProduct)(products), pageManager);
     }).then((pageManager)=>{
         (0, _appstate.APPSTATE).loader.show(false);
         return appendPageToDocument(pageManager.getFirstPage());
@@ -643,7 +646,7 @@ function uploadData() {
         limit: (0, _appstate.APPSTATE).loadLimit
     }).then((products)=>{
         shiftOffset();
-        return fillPage(clearDublicateProduct(products), (0, _appstate.APPSTATE).pageManager);
+        return fillPage((0, _utils.clearDublicateProduct)(products), (0, _appstate.APPSTATE).pageManager);
     }).then(()=>{
         (0, _appstate.APPSTATE).loader.show(false);
     }).catch((err)=>{
@@ -656,7 +659,7 @@ async function getProductData(options) {
         offset: options.offset,
         limit: options.limit
     }));
-    const ids = clearDublicateID(ids_raw.result);
+    const ids = (0, _utils.clearDublicateID)(ids_raw.result);
     const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
         ids: ids
     }));
@@ -693,109 +696,20 @@ function shiftOffset() {
     (0, _appstate.APPSTATE).loadOffset = (0, _appstate.APPSTATE).loadOffset + (0, _appstate.APPSTATE).loadLimit;
 }
 //Filter---------------
-function initFilter() {
-    const filterForm = document.querySelector("#filter-form");
-    if (filterForm && filterForm instanceof HTMLFormElement) filterForm.addEventListener("submit", async (e)=>{
-        e.preventDefault();
-        submitDebounce(filterForm);
-    });
+async function queryFilter(query) {
+    console.log(query);
+    const result = await (0, _filter.getFilterData)(query);
+    console.log(result);
 }
-/*
-    submitDebounce(filterForm: HTMLFormElement) - функция блокирует кнопку Submit на время запроса + 1сек
-*/ function submitDebounce(filterForm) {
-    const filterFormSubmit = document.querySelector("#filter-form>button[type=submit]");
-    filterFormSubmit.classList.add("inaccess");
-    onFormSubmit(filterForm).then((data)=>{
-        const ids_data = crossFilterData(data);
-        return getProductsByIDs(ids_data);
-    }).then((data)=>{
-        console.log(data.result);
-        //---------------------------------------------//
-        blockedSubmitFilterForm(filterFormSubmit, 1000);
-    }).catch((err)=>{
-        console.log("Error: ", err);
-        blockedSubmitFilterForm(filterFormSubmit, 1000);
-    });
-}
-async function onFormSubmit(form) {
-    const results = new Array();
-    [
-        ...form.elements
-    ].forEach((input)=>{
-        if (input.value) {
-            const res = filteringData(input.name, input.value);
-            results.push(res);
-        }
-    });
-    return Promise.all(results);
-}
-async function filteringData(filterName, filterValue) {
-    let result;
-    switch(filterName){
-        case "product":
-            result = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).filter({
-                "product": filterValue
-            }));
-            break;
-        case "brand":
-            result = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).filter({
-                "brand": filterValue
-            }));
-            break;
-        case "price":
-            result = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).filter({
-                "price": parseFloat(filterValue)
-            }));
-            break;
-        default:
-            result = Promise.reject(()=>{
-                throw Error("Error: \u041E\u0448\u0438\u0431\u043A\u0430 \u0444\u0438\u043B\u044C\u0442\u0440\u0430\u0446\u0438\u0438");
-            });
-            break;
-    }
-    return result;
-}
+// =====================================================
 async function getProductsByIDs(ids) {
     const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
         ids: ids
     }));
     return products;
 }
-//-----------------------------------------------------------------
-function crossFilterData(arrays) {
-    if (arrays.length === 1) return arrays[0];
-    else if (arrays.length === 2) return crossTwoData(arrays[0], arrays[1]);
-    else if (arrays.length == 3) {
-        const tmp = crossTwoData(arrays[0], arrays[1]);
-        return crossTwoData(tmp, arrays[2]);
-    } else return [];
-}
-function crossTwoData(data1, data2) {
-    return data1.filter((el)=>data2.includes(el));
-}
-function blockedSubmitFilterForm(submitButton, timeout) {
-    setTimeout(()=>{
-        submitButton.classList.remove("inaccess");
-    }, timeout);
-}
-function clearDublicateID(data) {
-    return [
-        ...new Set([
-            ...data
-        ])
-    ];
-}
-function clearDublicateProduct(data) {
-    const idMap = new Map();
-    data.forEach((product)=>{
-        if (!idMap.get(product.id)) idMap.set(product.id, product);
-    });
-    return [
-        ...idMap.values()
-    ];
-}
 
-},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./appstate/appstate":"eMp2h","./components/page/page":"hCezX","./components/paginator/paginator":"2HLYK","./page_manager":"j7Bvv","./components/loader/loader":"f3fYZ","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"e5BwA":[function(require,module,exports) {
+},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./appstate/appstate":"eMp2h","./components/page/page":"hCezX","./components/paginator/paginator":"2HLYK","./page_manager":"j7Bvv","./components/loader/loader":"f3fYZ","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./filter/filter":"kDsV9","./utils/utils":"cuzta"}],"e5BwA":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getDataFromApi", ()=>getDataFromApi);
@@ -1661,6 +1575,7 @@ parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "APPSTATE", ()=>APPSTATE);
 const APPSTATE = {
     rootApp: null,
+    filter: null,
     loader: null,
     apiURL: "https://api.valantis.store:41000/",
     password: "Valantis",
@@ -1671,37 +1586,7 @@ const APPSTATE = {
     pagesOnServer: 265 // 264 * 49 + 18 = 12_954
 };
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gkKU3":[function(require,module,exports) {
-exports.interopDefault = function(a) {
-    return a && a.__esModule ? a : {
-        default: a
-    };
-};
-exports.defineInteropFlag = function(a) {
-    Object.defineProperty(a, "__esModule", {
-        value: true
-    });
-};
-exports.exportAll = function(source, dest) {
-    Object.keys(source).forEach(function(key) {
-        if (key === "default" || key === "__esModule" || Object.prototype.hasOwnProperty.call(dest, key)) return;
-        Object.defineProperty(dest, key, {
-            enumerable: true,
-            get: function() {
-                return source[key];
-            }
-        });
-    });
-    return dest;
-};
-exports.export = function(dest, destName, get) {
-    Object.defineProperty(dest, destName, {
-        enumerable: true,
-        get: get
-    });
-};
-
-},{}],"hUXUM":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hUXUM":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "APICOMMANDS", ()=>APICOMMANDS);
@@ -2281,6 +2166,78 @@ function renderTemplate() {
         </style>
     `;
     return `${html}${css}`;
+}
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"kDsV9":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "getFilterData", ()=>getFilterData);
+var _api = require("../api/api");
+var _apiCommands = require("../api/api_commands");
+var _utils = require("../utils/utils");
+async function getFilterData(query) {
+    const results = new Array();
+    results.push(queryPromise(query, "product"));
+    results.push(queryPromise(query, "brand"));
+    results.push(queryPromise(query, "price"));
+    return Promise.all(results).then((data)=>{
+        const allData = [];
+        data.forEach((res)=>{
+            if (res) allData.push([
+                ...res.result
+            ]);
+        });
+        return (0, _utils.clearDublicateID)(allData.flat(1));
+    }).then((ids)=>{
+        return (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
+            ids: ids
+        }));
+    }).then((products)=>{
+        return (0, _utils.clearDublicateProduct)(products.result);
+    });
+}
+async function queryPromise(query, key) {
+    let params = null;
+    switch(key){
+        case "product":
+            params = {
+                "product": `${query.get(key)}`
+            };
+            break;
+        case "brand":
+            params = {
+                "brand": `${query.get(key)}`
+            };
+            break;
+        case "price":
+            params = {
+                "price": parseFloat(`${query.get(key)}`)
+            };
+            break;
+    }
+    if (query.has(key) && query.get(key)) return await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).filter(params));
+}
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","../api/api":"e5BwA","../api/api_commands":"hUXUM","../utils/utils":"cuzta"}],"cuzta":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "clearDublicateID", ()=>clearDublicateID);
+parcelHelpers.export(exports, "clearDublicateProduct", ()=>clearDublicateProduct);
+function clearDublicateID(data) {
+    return [
+        ...new Set([
+            ...data
+        ])
+    ];
+}
+function clearDublicateProduct(data) {
+    const idMap = new Map();
+    data.forEach((product)=>{
+        if (!idMap.get(product.id)) idMap.set(product.id, product);
+    });
+    return [
+        ...idMap.values()
+    ];
 }
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")

@@ -1,5 +1,6 @@
 export const APPSTATE = {
     rootApp: null,
+    filter: null,
     loader: null,
     apiURL: "https://api.valantis.store:41000/",
     password: "Valantis",
