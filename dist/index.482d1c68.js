@@ -589,8 +589,12 @@ var _paginator = require("./components/paginator/paginator");
 var _paginatorDefault = parcelHelpers.interopDefault(_paginator);
 var _pageManager = require("./page_manager");
 var _pageManagerDefault = parcelHelpers.interopDefault(_pageManager);
+var _loader = require("./components/loader/loader");
+var _loaderDefault = parcelHelpers.interopDefault(_loader);
 window.addEventListener("load", async ()=>{
-    (0, _appstate.APPSTATE).loader = document.querySelector(".loader-screen");
+    (0, _appstate.APPSTATE).rootApp = document.querySelector("#app");
+    (0, _appstate.APPSTATE).loader = new (0, _loaderDefault.default)();
+    (0, _appstate.APPSTATE).loader.appendToDOM((0, _appstate.APPSTATE).rootApp);
     const { pageManager, paginator } = InitStateApp();
     (0, _appstate.APPSTATE).pageManager = pageManager;
 // const responseIDs = await getDataFromApi(APICOMMANDS.getIDs({ offset: 0, limit: 10 }));
@@ -620,7 +624,7 @@ function InitStateApp() {
         shiftOffset();
         return fillPage(clearDublicateProduct(products), pageManager);
     }).then((pageManager)=>{
-        showLoader(false);
+        (0, _appstate.APPSTATE).loader.show(false);
         return appendPageToDocument(pageManager.getFirstPage());
     }).then((result)=>{
         upPaginator.setEnabled(result);
@@ -633,7 +637,7 @@ function InitStateApp() {
     };
 }
 function uploadData() {
-    showLoader(true);
+    (0, _appstate.APPSTATE).loader.show(true);
     getProductData({
         offset: (0, _appstate.APPSTATE).loadOffset,
         limit: (0, _appstate.APPSTATE).loadLimit
@@ -641,7 +645,7 @@ function uploadData() {
         shiftOffset();
         return fillPage(clearDublicateProduct(products), (0, _appstate.APPSTATE).pageManager);
     }).then(()=>{
-        showLoader(false);
+        (0, _appstate.APPSTATE).loader.show(false);
     }).catch((err)=>{
         console.log("Get Product Error: ", err);
     });
@@ -687,23 +691,6 @@ function pageVerifyOnRemainder(pageManager) {
 }
 function shiftOffset() {
     (0, _appstate.APPSTATE).loadOffset = (0, _appstate.APPSTATE).loadOffset + (0, _appstate.APPSTATE).loadLimit;
-}
-function showLoader(isShow) {
-    if (isShow) {
-        (0, _appstate.APPSTATE).loader.classList.remove("opaq-0");
-        (0, _appstate.APPSTATE).loader.classList.add("opaq-100");
-        setTimeout(()=>{
-            (0, _appstate.APPSTATE).loader.classList.remove("hide");
-        }, 300);
-    } else {
-        (0, _appstate.APPSTATE).loader.classList.remove("opaq-100");
-        (0, _appstate.APPSTATE).loader.classList.add("opaq-0");
-        setTimeout(()=>{
-            (0, _appstate.APPSTATE).loader.classList.add("hide");
-        }, 1000);
-    }
-// APPSTATE.loader.classList.remove("hide") :
-// 
 }
 //Filter---------------
 function initFilter() {
@@ -808,7 +795,7 @@ function clearDublicateProduct(data) {
     ];
 }
 
-},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./appstate/appstate":"eMp2h","./components/page/page":"hCezX","./components/paginator/paginator":"2HLYK","./page_manager":"j7Bvv","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"e5BwA":[function(require,module,exports) {
+},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./appstate/appstate":"eMp2h","./components/page/page":"hCezX","./components/paginator/paginator":"2HLYK","./page_manager":"j7Bvv","./components/loader/loader":"f3fYZ","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"e5BwA":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getDataFromApi", ()=>getDataFromApi);
@@ -1673,6 +1660,7 @@ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "APPSTATE", ()=>APPSTATE);
 const APPSTATE = {
+    rootApp: null,
     loader: null,
     apiURL: "https://api.valantis.store:41000/",
     password: "Valantis",
@@ -2133,6 +2121,167 @@ class PageManager {
     };
 }
 exports.default = PageManager;
+
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"f3fYZ":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+class Loader extends HTMLElement {
+    root = null;
+    constructor(){
+        super();
+        this.root = this.attachShadow({
+            mode: "open"
+        });
+        this.root.innerHTML = renderTemplate();
+        this.setAttribute("class", "loader-screen");
+        this.root.querySelector("img").src = "gem.webp";
+    }
+    appendToDOM = (parent)=>parent.appendChild(this);
+    show(is_show) {
+        if (is_show) {
+            this.classList.remove("opaq-0");
+            this.classList.add("opaq-100");
+            setTimeout(()=>{
+                this.classList.remove("hide");
+            }, 300);
+        } else {
+            this.classList.remove("opaq-100");
+            this.classList.add("opaq-0");
+            setTimeout(()=>{
+                this.classList.add("hide");
+            }, 1000);
+        }
+    }
+}
+exports.default = Loader;
+if (!customElements.get("nice2jm-loader")) customElements.define("nice2jm-loader", Loader);
+function renderTemplate() {
+    const html = `
+            <div class="loader">
+                <img>
+                <span style="--i:0"></span>
+                <span style="--i:1"></span>
+                <span style="--i:2"></span>
+                <span style="--i:3"></span>
+                <span style="--i:4"></span>
+                <span style="--i:5"></span>
+                <span style="--i:6"></span>
+                <span style="--i:7"></span>
+                <span style="--i:8"></span>
+                <span style="--i:9"></span>
+                <span style="--i:10"></span>
+                <span style="--i:11"></span>
+                <span style="--i:12"></span>
+                <span style="--i:13"></span>
+                <span style="--i:14"></span>
+                <span style="--i:15"></span>
+                <span style="--i:16"></span>
+                <span style="--i:17"></span>
+                <span style="--i:18"></span>
+                <span style="--i:19"></span>
+            </div>
+    `;
+    const css = `
+        <style>
+        :host{
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top:0;
+            left:0;
+            background-color: rgba(255, 255, 255, 0.3);
+            display:flex;
+            justify-content: center;
+            align-items: center;
+            z-index:10;
+            color:white;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .loader{
+            position: relative;
+            width:160px;
+            height:160px;
+        }
+        .loader span{
+            position: absolute;
+            top:0;
+            left:0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(calc(18deg*var(--i)));
+        }
+        .loader img{
+            position: absolute;
+            top:calc(50% - 40px);
+            left:calc(50% - 40px);
+            width: 80px;
+            height: 80px;
+            animation: rotateanim 5s linear infinite;
+        }
+        .loader span::before {
+            content:"";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border:1px solid rgba(57, 6, 197, 0.9);
+            border-radius: 5%;
+            transform: scale(5);
+            transform: rotate(calc(18deg * var(--i)));
+            animation: scaleanim 3s linear infinite;
+            animation-delay: calc(0.1s * var(--i));
+        }
+        .hide{
+            display: none;
+        }
+        .opaq-0{
+            animation: opaqanim 1s linear;
+        }
+        .opaq-1 {
+            animation: opaqanim 1s linear reverse;
+        }
+        @keyframes scaleanim {
+            0%{
+                transform: scale(0);
+                opacity: 1;
+            }
+            10%{
+                transform: scale(1.1);
+                opacity: 0.3;
+            }
+            50%{
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+            100%{
+                transform: scale(0.5);
+                opacity: 0;
+            }
+        }
+        @keyframes rotateanim {
+            0% {
+                transform: rotateY(0);
+            }
+
+            100% {
+                transform: rotateY(360deg);
+            }
+        }        
+        @keyframes opaqanim {
+            0%{
+                opacity: 1;
+            }
+            100%{
+                opacity: 0;
+            }
+        }
+        </style>
+    `;
+    return `${html}${css}`;
+}
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")
 

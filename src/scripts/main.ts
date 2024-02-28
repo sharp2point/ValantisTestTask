@@ -1,13 +1,18 @@
 import { getDataFromApi } from "./api/api";
 import { APICOMMANDS } from "./api/api_commands";
 import { APPSTATE } from "./appstate/appstate";
+import { Product } from "./types/app_types";
 import PageComponent from "./components/page/page";
 import Paginator from "./components/paginator/paginator";
 import PageManager from "./page_manager";
-import { Product } from "./types/app_types";
+import Loader from "./components/loader/loader";
+
 
 window.addEventListener('load', async () => {
-    APPSTATE.loader = document.querySelector(".loader-screen");
+    APPSTATE.rootApp = document.querySelector("#app");
+    APPSTATE.loader = new Loader();
+    APPSTATE.loader.appendToDOM(APPSTATE.rootApp);
+    
     const { pageManager, paginator } = InitStateApp();
     APPSTATE.pageManager = pageManager;
 
@@ -41,7 +46,7 @@ function InitStateApp() {
         shiftOffset();
         return fillPage(clearDublicateProduct(products), pageManager);
     }).then((pageManager) => {
-        showLoader(false);
+        APPSTATE.loader.show(false);
         return appendPageToDocument(pageManager.getFirstPage());
     }).then((result) => {
         upPaginator.setEnabled(result);
@@ -56,12 +61,12 @@ function InitStateApp() {
 }
 
 function uploadData() {
-    showLoader(true);
+    APPSTATE.loader.show(true);
     getProductData({ offset: APPSTATE.loadOffset, limit: APPSTATE.loadLimit }).then((products) => {
         shiftOffset();
         return fillPage(clearDublicateProduct(products), APPSTATE.pageManager);
     }).then(() => {
-        showLoader(false);
+        APPSTATE.loader.show(false);
     }).catch((err) => {
         console.log("Get Product Error: ", err);
     });
@@ -108,23 +113,6 @@ function pageVerifyOnRemainder(pageManager: PageManager) {
 function shiftOffset() {
     APPSTATE.loadOffset = APPSTATE.loadOffset + APPSTATE.loadLimit;
 }
-function showLoader(isShow: boolean) {
-    if (isShow) {
-        APPSTATE.loader.classList.remove("opaq-0");
-        APPSTATE.loader.classList.add("opaq-100");
-        setTimeout(() => {
-            APPSTATE.loader.classList.remove("hide");
-        }, 300);
-    } else {
-        APPSTATE.loader.classList.remove("opaq-100");
-        APPSTATE.loader.classList.add("opaq-0");
-        setTimeout(() => {
-            APPSTATE.loader.classList.add("hide");
-        },1000);
-    }
-        // APPSTATE.loader.classList.remove("hide") :
-        // 
-}
 //Filter---------------
 
 function initFilter() {
@@ -157,7 +145,7 @@ function submitDebounce(filterForm: HTMLFormElement) {
 }
 async function onFormSubmit(form: HTMLFormElement) {
     const results = new Array<Promise<any>>();
-    [...form.elements].forEach((input) => {
+    [...form.elements].forEach((input: HTMLFormElement) => {
         if (input.value) {
             const res = filteringData(input.name, input.value);
             results.push(res);
