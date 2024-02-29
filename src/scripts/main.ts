@@ -39,12 +39,12 @@ window.addEventListener('load', async () => {
 
 async function getProductData(options: { offset: number, limit: number }) {
     const ids_raw = await getDataFromApi(APICOMMANDS.getIDs({ offset: options.offset, limit: options.limit }));
-    const ids = clearDublicateID(ids_raw.result);
-    const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids }));
+    //const ids = clearDublicateID(ids_raw.result);
+    const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids_raw.result }));
     return Promise.resolve(products.result);
 }
 function fillPage(products: Array<Product>, pageManager: PageManager) {
-    let { isNew, page } = pageManager.pageRemaind();
+    let page = pageManager.pageRemaind();
     for (let i = 0; i < products.length; i++) {
         const result = page.addProduct(products[i]);        
         if (!result) {

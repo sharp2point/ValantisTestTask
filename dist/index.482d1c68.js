@@ -627,14 +627,14 @@ async function getProductData(options) {
         offset: options.offset,
         limit: options.limit
     }));
-    const ids = (0, _utils.clearDublicateID)(ids_raw.result);
+    //const ids = clearDublicateID(ids_raw.result);
     const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
-        ids: ids
+        ids: ids_raw.result
     }));
     return Promise.resolve(products.result);
 }
 function fillPage(products, pageManager) {
-    let { isNew, page } = pageManager.pageRemaind();
+    let page = pageManager.pageRemaind();
     for(let i = 0; i < products.length; i++){
         const result = page.addProduct(products[i]);
         if (!result) {
@@ -1825,21 +1825,14 @@ class PageManager {
         });
     };
     pageRemaind = ()=>{
-        if (this.getLastPage() && this.getLastPage().capasity > 0) return {
-            isNew: false,
-            page: this.getLastPage()
-        };
-        else {
+        if (!(this.getLastPage() && this.getLastPage().capasity > 0)) {
             const page = new (0, _pageDefault.default)(this.getLastPage() ? this.getLastPage().pageID + 1 : 0, this.pages.length * (0, _appstate.APPSTATE).productsOnPage);
             this.pages.push(page);
             this.addPageSubscribers.forEach((fn)=>{
                 fn(this.pages.length);
             });
-            return {
-                isNew: true,
-                page: this.getLastPage()
-            };
         }
+        return this.getLastPage();
     };
 }
 exports.default = PageManager;

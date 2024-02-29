@@ -11,5 +11,5 @@ export const APPSTATE = {
     pageManager: null, // менеджер страниц -> web-component PageManager
     filterPageManager: null, // менеджер страниц фильтрации -> web-component PageManager
     pageManagerFocused: null, // текущий менеджер страниц  -> web-component PageManager
-    // pagesOnServer: 265 // 264 * 49 + 18 = 12_954 // примерное колличество элементов в БД
+    // pagesOnServer: 177 // 177 * 50 + 21 = 8871 // примерное колличество элементов в БД 203 якб 200,201
 }

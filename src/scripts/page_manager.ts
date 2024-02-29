@@ -57,21 +57,13 @@ export default class PageManager {
         })
     }
     pageRemaind = () => {
-        if (this.getLastPage() && this.getLastPage().capasity > 0) {
-            return {
-                isNew: false,
-                page: this.getLastPage()
-            }
-        } else {
+        if (!(this.getLastPage() && this.getLastPage().capasity > 0)) {
             const page = new PageComponent((this.getLastPage() ? this.getLastPage().pageID + 1 : 0), this.pages.length * APPSTATE.productsOnPage)
             this.pages.push(page);
             this.addPageSubscribers.forEach((fn) => {
                 fn(this.pages.length);
-            })
-            return {
-                isNew: true,
-                page: this.getLastPage()
-            }
+            });
         }
+        return this.getLastPage();
     }
 }
