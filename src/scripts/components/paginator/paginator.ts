@@ -4,6 +4,7 @@ export default class Paginator extends HTMLElement {
     private root: ShadowRoot | null = null;
     private cursor = 0;
     private pageManager: PageManager | null;
+    private pageCount = 0;
     private dom = {
         position: null,
         leftButton: null,
@@ -11,7 +12,7 @@ export default class Paginator extends HTMLElement {
     };
     //-----------------------------------------
     set position(position: number) {
-        if (position < this.pageManager!.pagesCount) {
+        if (position < this.pageManager.pageCount) {
             this.cursor = position;
         }
     }
@@ -31,19 +32,20 @@ export default class Paginator extends HTMLElement {
         //this.style.visibility = "hidden";
     }
     connectedCallback() {
-        (this.dom.leftButton! as HTMLElement).addEventListener("click", (e) => {
+        this.pageManager.addPageSubscriber(this.updateContent);
+        this.dom.leftButton.addEventListener("click", () => {
             this.previewPosition();
-            this.updateTextPosition();
-            this.notify();
+            this.updateContent();
+            this.pageManager.paginator(this.cursor);
         });
-        (this.dom.rightButton! as HTMLElement).addEventListener("click", (e) => {
+        this.dom.rightButton.addEventListener("click", () => {
             this.nextPosition();
-            this.updateTextPosition();
-            this.notify();
+            this.updateContent();
+            this.pageManager.paginator(this.cursor);
         });
     }
     nextPosition() {
-        if (this.cursor < this.pageManager!.pagesCount - 1) {
+        if (this.cursor < this.pageManager.pageCount - 1) {
             this.cursor += 1;
         }
     }
@@ -61,13 +63,11 @@ export default class Paginator extends HTMLElement {
     setPageManager = (pageManager: PageManager) => {
         this.pageManager = pageManager;
         this.cursor = 0;
-        this.updateTextPosition();
+        this.updateContent();
     }
-    private updateTextPosition() {
-        (this.dom.position! as HTMLElement).textContent = `${this.cursor + 1}`;
-    }
-    private notify() {
-        this.pageManager.paginator(this.cursor);
+    private updateContent = (countPage?: number) => {
+        this.pageCount = countPage || this.pageCount;
+        this.dom.position.textContent = `${this.cursor + 1} из ${this.pageCount}`;
     }
 }
 if (!customElements.get("nice2jm-page-paginator")) {

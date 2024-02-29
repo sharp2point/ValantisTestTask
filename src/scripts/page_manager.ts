@@ -3,17 +3,17 @@ import PageComponent from "./components/page/page";
 
 export default class PageManager {
     private pages = new Array<PageComponent>();
-    private _pageCount = 0;
     private cursor = 0;
     private subscribers = new Array<(page: PageComponent) => void>();
+    private addPageSubscribers = new Array<(countPage: number) => void>();
     private uploadDataEvent = () => { };
     private _name: string;
 
     get name() {
         return this._name;
     }
-    get pagesCount() {
-        return this._pageCount;
+    get pageCount() {
+        return this.pages.length;
     }
 
     constructor(name: string, uploadDataEvent?: () => void) {
@@ -24,12 +24,7 @@ export default class PageManager {
     }
     clearState() {
         this.pages = [];
-        this._pageCount = 0;
         this.cursor = 0;
-    }
-    addPage(page: PageComponent) {
-        this.pages.push(page);
-        this._pageCount += 1;
     }
     getPageByIndex = (index: number) => {
         this.cursor = index;
@@ -43,44 +38,40 @@ export default class PageManager {
         this.cursor = this.pages.length - 1;
         return this.pages[this.pages.length - 1];
     }
-    // nextPage = () => {
-    //     if (this.cursor <= this.pages.length - 1) {
-    //         this.cursor += 1;
-    //         return this.getPageByIndex(this.cursor);
-    //     } else {
-    //         return this.getLastPage();
-    //     }
-    // }
-    // previewPage = () => {
-    //     if (this.cursor >= 0) {
-    //         this.cursor -= 1;
-    //         return this.getPageByIndex(this.cursor);
-    //     } else {
-    //         return this.getFirstPage();
-    //     }
-    // }
+    addPageSubscriber(fn: (countPage: number) => void) {
+        this.addPageSubscribers.push(fn);
+    }
     addSubscriber(fn: (page: PageComponent) => void) {
         this.subscribers.push(fn);
     }
     paginator = (position: number) => {
         this.cursor = position;
-        console.log("Pag: ", position)
-        console.log(this.name, " Pages: ", this.pagesCount)
-        if (this.cursor === this.pagesCount - 1) {
+        if (this.cursor === this.pages.length - 1) {
             this.uploadDataEvent();
         }
         this.notyfy()
     }
     notyfy = () => {
         this.subscribers.forEach((fn) => {
-            console.log("Cur: ", this.cursor)
             fn(this.getPageByIndex(this.cursor));
         })
     }
     pageRemaind = () => {
-        return (this.getLastPage() && this.getLastPage().capasity > 0) ?
-            this.getLastPage() :
-            new PageComponent(this.pagesCount + 1, this.pagesCount * APPSTATE.productsOnPage);
+        if (this.getLastPage() && this.getLastPage().capasity > 0) {
+            return {
+                isNew: false,
+                page: this.getLastPage()
+            }
+        } else {
+            const page = new PageComponent((this.getLastPage() ? this.getLastPage().pageID + 1 : 0), this.pages.length * APPSTATE.productsOnPage)
+            this.pages.push(page);
+            this.addPageSubscribers.forEach((fn) => {
+                fn(this.pages.length);
+            })
+            return {
+                isNew: true,
+                page: this.getLastPage()
+            }
+        }
     }
-
 }

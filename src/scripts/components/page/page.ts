@@ -1,38 +1,38 @@
 import { Product } from "src/scripts/types/app_types";
 import ProductComponent from "../product/product";
+import { APPSTATE } from "src/scripts/appstate/appstate";
 
 export default class PageComponent extends HTMLElement {
     private root: ShadowRoot;
-    private _capasity = 50;
-    private cachProducts = new Array<Product>();
+    private _capasity = APPSTATE.productsOnPage; // вместимость страницы
     private _id = 0; // id страницы
-    private index_product = 0; // порядковый номер продукта
+    private indexProduct = 0; // порядковый номер продукта
 
-    constructor(id: number,init_index_product:number) {
+    get pageID() {
+        return this._id;
+    }
+    get capasity() {
+        return this._capasity;
+    }
+
+    constructor(id: number, firstProductIndex: number) {
         super();
         this._id = id;
-        this.index_product = init_index_product;
+        this.indexProduct = firstProductIndex;
         this.root = this.attachShadow({ mode: 'open' });
         this.root.innerHTML = renderTemplate();
         this.setAttribute("class", "page");
     }
     addProduct(product_data: Product) {
         if (this.capasity > 0) {
-            this.cachProducts.push(product_data);
-            const product = new ProductComponent(this.index_product, product_data);
+            const product = new ProductComponent(this.indexProduct, product_data);
             this.root.getRootNode().appendChild(product);
             this._capasity -= 1;
-            this.index_product += 1;
+            this.indexProduct += 1;
             return true;
         } else {
             return false;
         }
-    }
-    get capasity() {
-        return this._capasity;
-    }
-    get pageId() {
-        return this._id;
     }
 }
 

@@ -7,7 +7,7 @@ import PageManager from "./page_manager";
 import Loader from "./components/loader/loader";
 import FilterComponent from "./components/filter/filter";
 import { getFilterData } from "./filter/filter";
-import { appendPageToDocument, clearDublicateID, clearDublicateProduct, isQueryEmpty, shiftOffset } from "./utils/utils";
+import { appendPageToDocument, clearDublicateID, clearDublicateProduct, clearNotify, closeFilterNotifyAction, isQueryEmpty, shiftOffset } from "./utils/utils";
 import NotifyComponent from "./notyfy/notify";
 
 
@@ -19,16 +19,17 @@ window.addEventListener('load', async () => {
     APPSTATE.loader.appendToDOM(APPSTATE.rootApp);
     APPSTATE.pageManager = new PageManager("main", uploadData);
     APPSTATE.pageManager.addSubscriber(appendPageToDocument);
-    APPSTATE.pageManagerFocused = APPSTATE.pageManager;
     APPSTATE.filterPageManager = new PageManager("filter", () => { console.log("Filter Update Page") });
     APPSTATE.filterPageManager.addSubscriber(appendPageToDocument);
+    APPSTATE.pageManagerFocused = APPSTATE.pageManager;
     APPSTATE.paginator = new Paginator(APPSTATE.pageManager);
     APPSTATE.paginator.appendToDOM(document.querySelector(".paginator-place")!);
 
+    // Get Data Form API
     getProductData({ offset: APPSTATE.loadOffset, limit: APPSTATE.loadLimit }).then((products) => {
-        shiftOffset();
         return fillPage(clearDublicateProduct(products), APPSTATE.pageManager);
     }).then((pageManager) => {
+        shiftOffset();
         APPSTATE.loader.show(false);
         return appendPageToDocument(pageManager.getFirstPage());
     }).catch((err) => {
@@ -36,7 +37,23 @@ window.addEventListener('load', async () => {
     });
 });
 
-
+async function getProductData(options: { offset: number, limit: number }) {
+    const ids_raw = await getDataFromApi(APICOMMANDS.getIDs({ offset: options.offset, limit: options.limit }));
+    const ids = clearDublicateID(ids_raw.result);
+    const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids }));
+    return Promise.resolve(products.result);
+}
+function fillPage(products: Array<Product>, pageManager: PageManager) {
+    let { isNew, page } = pageManager.pageRemaind();
+    for (let i = 0; i < products.length; i++) {
+        const result = page.addProduct(products[i]);        
+        if (!result) {
+            fillPage(products.slice(i, products.length - 1), pageManager);
+            break;
+        }
+    }
+    return pageManager;
+}
 function uploadData() {
     APPSTATE.loader.show(true);
     getProductData({ offset: APPSTATE.loadOffset, limit: APPSTATE.loadLimit }).then((products) => {
@@ -52,31 +69,6 @@ function uploadData() {
         }, 1000);
     });
 }
-async function getProductData(options: { offset: number, limit: number }) {
-    const ids_raw = await getDataFromApi(APICOMMANDS.getIDs({ offset: options.offset, limit: options.limit }));
-    const ids = clearDublicateID(ids_raw.result);
-    const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids }));
-    return Promise.resolve(products.result);
-}
-function fillPage(products: Array<Product>, pageManager: PageManager) {
-    let page = pageManager.pageRemaind();
-
-    for (let i = 0; i < products.length; i++) {
-        const result = page.addProduct(products[i]);
-        if (i === products.length - 1) {
-            pageManager.addPage(page);
-            break;
-        }
-        if (!result) {
-            pageManager.addPage(page);
-            fillPage(products.slice(i, products.length - 1), pageManager)
-            break;
-        }
-    }
-    return pageManager;
-}
-
-
 //Filter---------------
 async function queryFilter(query: QueryFilter) {
     if (!isQueryEmpty(query)) {
@@ -91,7 +83,7 @@ async function queryFilter(query: QueryFilter) {
         }).then((pageManager) => {
             APPSTATE.loader.show(false);
             APPSTATE.paginator.setPageManager(APPSTATE.filterPageManager);
-            if (pageManager.pagesCount > 0) {
+            if (pageManager.pageCount > 0) {
                 return appendPageToDocument(pageManager.getFirstPage());
             } else {
                 const notify = new NotifyComponent("not-found-notify", "Продукты не найдены");
@@ -110,19 +102,4 @@ async function queryFilter(query: QueryFilter) {
         });
     }
 }
-function clearFilter() {
-    clearNotify();
-    APPSTATE.pageManagerFocused = APPSTATE.pageManager;
-    APPSTATE.paginator.setPageManager(APPSTATE.pageManagerFocused);
-    appendPageToDocument(APPSTATE.pageManagerFocused.getFirstPage());
-}
-function clearNotify() {
-    const notifyPlace = document.querySelector(".notify-place");
-    while (notifyPlace.firstChild) {
-        notifyPlace.removeChild(notifyPlace.firstChild);
-    }
-}
 
-function closeFilterNotifyAction(nameNotify: string) {
-    clearFilter();
-}

@@ -34,3 +34,19 @@ export function isQueryEmpty(query: QueryFilter) {
     });
     return isEmpty;
 }
+export function clearFilter() {
+    clearNotify();
+    APPSTATE.pageManagerFocused = APPSTATE.pageManager;
+    APPSTATE.paginator.setPageManager(APPSTATE.pageManagerFocused);
+    appendPageToDocument(APPSTATE.pageManagerFocused.getFirstPage());
+}
+export function clearNotify() {
+    const notifyPlace = document.querySelector(".notify-place");
+    while (notifyPlace.firstChild) {
+        notifyPlace.removeChild(notifyPlace.firstChild);
+    }
+}
+
+export function closeFilterNotifyAction(nameNotify: string) {
+    clearFilter();
+}
