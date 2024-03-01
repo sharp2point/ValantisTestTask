@@ -607,7 +607,8 @@ window.addEventListener("load", async ()=>{
     (0, _appstate.APPSTATE).filterPageManager.addSubscriber((0, _utils.appendPageToDocument));
     (0, _appstate.APPSTATE).pageManagerFocused = (0, _appstate.APPSTATE).pageManager;
     (0, _appstate.APPSTATE).paginator = new (0, _paginatorDefault.default)((0, _appstate.APPSTATE).pageManager);
-    (0, _appstate.APPSTATE).paginator.appendToDOM(document.querySelector(".paginator-place"));
+    (0, _appstate.APPSTATE).paginator.appendToDOM(document.querySelector(".settings"));
+    (0, _utils.initFilterButton)();
     // Get Data Form API
     getProductData({
         offset: (0, _appstate.APPSTATE).loadOffset,
@@ -627,7 +628,6 @@ async function getProductData(options) {
         offset: options.offset,
         limit: options.limit
     }));
-    //const ids = clearDublicateID(ids_raw.result);
     const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
         ids: ids_raw.result
     }));
@@ -671,7 +671,7 @@ async function queryFilter(query) {
         (0, _appstate.APPSTATE).pageManagerFocused = (0, _appstate.APPSTATE).filterPageManager;
         (0, _filter.getFilterData)(query).then((products)=>{
             const notify = new (0, _notifyDefault.default)("result-notify", `\u{432}\u{441}\u{435}\u{433}\u{43E} ${products.length}`);
-            notify.appendToDOM(document.querySelector(".notify-place"));
+            notify.appendToDOM(document.querySelector(".settings"));
             return fillPage((0, _utils.clearDublicateProduct)(products), (0, _appstate.APPSTATE).filterPageManager);
         }).then((pageManager)=>{
             (0, _appstate.APPSTATE).loader.show(false);
@@ -682,9 +682,10 @@ async function queryFilter(query) {
                 return (0, _utils.appendPageToDocument)(notify);
             }
         }).then(()=>{
+            (0, _appstate.APPSTATE).filter.classList.toggle("open-filter");
             const notify = new (0, _notifyDefault.default)("filter-mode-notify", "\u0424\u0438\u043B\u044C\u0442\u0440");
             notify.attachClickAction((0, _utils.closeFilterNotifyAction), "\u0417\u0430\u043A\u0440\u044B\u0442\u044C");
-            notify.appendToDOM(document.querySelector(".notify-place"));
+            notify.appendToDOM(document.querySelector(".settings"));
         }).catch((err)=>{
             console.error("Filter Request Error: ", err);
             setTimeout(()=>{
@@ -1694,7 +1695,7 @@ class Paginator extends HTMLElement {
     };
     updateContent = (countPage)=>{
         this.pageCount = countPage || this.pageCount;
-        this.dom.position.textContent = `${this.cursor + 1} \u{438}\u{437} ${this.pageCount}`;
+        this.dom.position.textContent = `${this.cursor + 1}`; //из ${this.pageCount}
     };
 }
 exports.default = Paginator;
@@ -1879,11 +1880,19 @@ if (!customElements.get("nice2jm-page-products")) customElements.define("nice2jm
 //-----------------------------------------------
 function renderTemplate() {
     const html = `
-        
+        <div class="header">
+            <span class="id"></span>     
+            <span class="product-id">id</span>
+            <span class="brand">\u{431}\u{440}\u{435}\u{43D}\u{434}</span>
+            <span class="price">\u{446}\u{435}\u{43D}\u{430}</span>
+            <span class="product">\u{43E}\u{43F}\u{438}\u{441}\u{430}\u{43D}\u{438}\u{435}</span>
+        </div>
     `;
     const css = `
         <style>
             :host{
+                --back-color:rgb(120,30,50);
+                --font-color: rgb(220,220,200);
                 display:flex;
                 flex-direction:column;
                 justify-content: start;
@@ -1893,6 +1902,52 @@ function renderTemplate() {
                 width:100%;
                 margin:1rem;
                 border:3px solid rgb(150,150,150);
+            }
+            .header{                
+                display:flex;
+                flex-direction:row;
+                justify-content:space-between;
+                align-items: center;
+                flex-wrap:nowrap;
+                width:95%;
+                min-height:40px;
+                font:900 1.3rem "Arial";
+                border-bottom:1px solid rgb(100,100,100);
+                background: var(--back-color);
+                color: var(--font-color);
+            }
+            span{
+                display:flex;
+                flex-direction:row;
+                justify-content:center;
+                padding-inline:0.3rem;
+                overflow:hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                text-transform:uppercase;
+                letter-spacing: 0.2rem;
+            }
+            span.id{
+                display:flex;
+                flex-direction:row;
+                gap:0;
+                flex-basis:6%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.product-id{
+                flex-basis:25%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.brand{
+                flex-basis:10%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.price{
+                flex-basis:10%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.product{
+                flex-basis:50%;
             }
         </style>
     `;
@@ -1936,6 +1991,7 @@ function renderTemplate(id, product) {
             :host{
                 --odd-back-color:rgb(60,60,60);
                 --even-back-color:rgb(70,70,70);
+                --font-color:rgb(200,200,200);
                 display:flex;
                 flex-direction:row;
                 justify-content:space-between;
@@ -1943,7 +1999,7 @@ function renderTemplate(id, product) {
                 flex-wrap:nowrap;
                 width:95%;
                 min-height:40px;
-                font:600 1rem "Arial";
+                font:100 1.2rem "Arial";
                 border-bottom:1px solid rgb(100,100,100);
                 background: ${isEvenID ? "var(--even-back-color)" : "var(--odd-back-color)"};
             }
@@ -1952,6 +2008,7 @@ function renderTemplate(id, product) {
                 overflow:hidden;
                 white-space: nowrap;
                 text-overflow: ellipsis;  
+                color:var(--font-color);
             }
             span.id{          
                 display:flex;
@@ -1974,23 +2031,23 @@ function renderTemplate(id, product) {
                 font-size:1.3rem;
                 color:rgb(220,150,100);
             }
-            span.product-id{
-                color: rgb(220,220,0);
+            span.product-id{                
                 flex-basis:25%;  
                 border-right: 1px solid rgb(100,100,100);              
             }
             span.brand{
-                color: white;
+                display:flex;
+                justify-content:center;
                 flex-basis:10%;
                 border-right: 1px solid rgb(100,100,100);
             }
             span.price{
-                color: white;
-                flex-basis:5%;
+                display:flex;
+                justify-content:center;
+                flex-basis:10%;
                 border-right: 1px solid rgb(100,100,100);
             }
             span.product{
-                color: white;
                 flex-basis:50%;
             }
         </style>
@@ -2237,6 +2294,7 @@ parcelHelpers.export(exports, "isQueryEmpty", ()=>isQueryEmpty);
 parcelHelpers.export(exports, "clearFilter", ()=>clearFilter);
 parcelHelpers.export(exports, "clearNotify", ()=>clearNotify);
 parcelHelpers.export(exports, "closeFilterNotifyAction", ()=>closeFilterNotifyAction);
+parcelHelpers.export(exports, "initFilterButton", ()=>initFilterButton);
 var _appstate = require("../appstate/appstate");
 function clearDublicateID(data) {
     return [
@@ -2281,11 +2339,20 @@ function clearFilter() {
     appendPageToDocument((0, _appstate.APPSTATE).pageManagerFocused.getFirstPage());
 }
 function clearNotify() {
-    const notifyPlace = document.querySelector(".notify-place");
-    while(notifyPlace.firstChild)notifyPlace.removeChild(notifyPlace.firstChild);
+// const notifyPlace = document.querySelector(".notify-place");
+// while (notifyPlace.firstChild) {
+//     notifyPlace.removeChild(notifyPlace.firstChild);
+// }
 }
 function closeFilterNotifyAction(nameNotify) {
     clearFilter();
+}
+function initFilterButton() {
+    const filterButton = document.querySelector(".filter-button");
+    const filter = document.querySelector(".filter");
+    filterButton.addEventListener("click", ()=>{
+        filter.classList.toggle("open-filter");
+    });
 }
 
 },{"../appstate/appstate":"eMp2h","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"caUfU":[function(require,module,exports) {

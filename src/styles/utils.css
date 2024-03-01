@@ -11,11 +11,24 @@
 .opaq-1 {
     animation: opaqanim 1s linear reverse;
 }
+.open-filter{
+    left:0;
+    animation: open-filter-anim 0.5s linear;
+}
 @keyframes opaqanim {
-    0%{
+    0% {
         opacity: 1;
     }
-    100%{
+
+    100% {
         opacity: 0;
+    }
+}
+@keyframes open-filter-anim {
+    0%{
+        left: -300px;
+    }
+    100%{
+        left: 0;
     }
 }

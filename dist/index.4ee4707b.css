@@ -10,31 +10,35 @@
   min-height: 100vh;
 }
 
+.filter {
+  position: absolute;
+  top: 0;
+  left: -300px;
+}
+
+.filter-button {
+  cursor: pointer;
+  background-color: #e7d6d6;
+  border: 3px solid #646464;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+
+  & img {
+    width: 70%;
+    height: 70%;
+  }
+}
+
 .settings {
   flex-direction: row;
   justify-content: center;
   align-items: center;
   gap: 1rem;
   display: flex;
-}
-
-.paginator-place {
-  flex-direction: row;
-  flex-basis: 60%;
-  justify-content: start;
-  align-items: center;
-  padding: 1rem;
-  display: flex;
-}
-
-.notify-place {
-  flex-direction: row;
-  flex-basis: 40%;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  display: flex;
+  position: sticky;
+  top: calc(100vh - 100px);
+  left: 0;
 }
 
 .app-page {
@@ -61,6 +65,11 @@
   animation: 1s linear reverse opaqanim;
 }
 
+.open-filter {
+  animation: .5s linear open-filter-anim;
+  left: 0;
+}
+
 @keyframes opaqanim {
   0% {
     opacity: 1;
@@ -68,6 +77,16 @@
 
   100% {
     opacity: 0;
+  }
+}
+
+@keyframes open-filter-anim {
+  0% {
+    left: -300px;
+  }
+
+  100% {
+    left: 0;
   }
 }
 

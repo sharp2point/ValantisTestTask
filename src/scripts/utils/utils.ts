@@ -41,12 +41,19 @@ export function clearFilter() {
     appendPageToDocument(APPSTATE.pageManagerFocused.getFirstPage());
 }
 export function clearNotify() {
-    const notifyPlace = document.querySelector(".notify-place");
-    while (notifyPlace.firstChild) {
-        notifyPlace.removeChild(notifyPlace.firstChild);
-    }
+    // const notifyPlace = document.querySelector(".notify-place");
+    // while (notifyPlace.firstChild) {
+    //     notifyPlace.removeChild(notifyPlace.firstChild);
+    // }
 }
 
 export function closeFilterNotifyAction(nameNotify: string) {
     clearFilter();
+}
+export function initFilterButton() {
+    const filterButton = document.querySelector(".filter-button");
+    const filter = document.querySelector(".filter");
+    filterButton.addEventListener("click", () => {
+        filter.classList.toggle("open-filter");
+    })
 }

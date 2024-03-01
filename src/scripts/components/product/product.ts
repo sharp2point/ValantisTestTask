@@ -36,6 +36,7 @@ function renderTemplate(id: number, product: Product) {
             :host{
                 --odd-back-color:rgb(60,60,60);
                 --even-back-color:rgb(70,70,70);
+                --font-color:rgb(200,200,200);
                 display:flex;
                 flex-direction:row;
                 justify-content:space-between;
@@ -43,7 +44,7 @@ function renderTemplate(id: number, product: Product) {
                 flex-wrap:nowrap;
                 width:95%;
                 min-height:40px;
-                font:600 1rem "Arial";
+                font:100 1.2rem "Arial";
                 border-bottom:1px solid rgb(100,100,100);
                 background: ${isEvenID ? 'var(--even-back-color)' : 'var(--odd-back-color)'};
             }
@@ -52,6 +53,7 @@ function renderTemplate(id: number, product: Product) {
                 overflow:hidden;
                 white-space: nowrap;
                 text-overflow: ellipsis;  
+                color:var(--font-color);
             }
             span.id{          
                 display:flex;
@@ -74,23 +76,23 @@ function renderTemplate(id: number, product: Product) {
                 font-size:1.3rem;
                 color:rgb(220,150,100);
             }
-            span.product-id{
-                color: rgb(220,220,0);
+            span.product-id{                
                 flex-basis:25%;  
                 border-right: 1px solid rgb(100,100,100);              
             }
             span.brand{
-                color: white;
+                display:flex;
+                justify-content:center;
                 flex-basis:10%;
                 border-right: 1px solid rgb(100,100,100);
             }
             span.price{
-                color: white;
-                flex-basis:5%;
+                display:flex;
+                justify-content:center;
+                flex-basis:10%;
                 border-right: 1px solid rgb(100,100,100);
             }
             span.product{
-                color: white;
                 flex-basis:50%;
             }
         </style>

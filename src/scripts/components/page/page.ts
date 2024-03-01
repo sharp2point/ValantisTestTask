@@ -42,11 +42,19 @@ if (!customElements.get("nice2jm-page-products")) {
 //-----------------------------------------------
 function renderTemplate() {
     const html = `
-        
+        <div class="header">
+            <span class="id"></span>     
+            <span class="product-id">id</span>
+            <span class="brand">бренд</span>
+            <span class="price">цена</span>
+            <span class="product">описание</span>
+        </div>
     `;
     const css = `
         <style>
             :host{
+                --back-color:rgb(120,30,50);
+                --font-color: rgb(220,220,200);
                 display:flex;
                 flex-direction:column;
                 justify-content: start;
@@ -56,6 +64,52 @@ function renderTemplate() {
                 width:100%;
                 margin:1rem;
                 border:3px solid rgb(150,150,150);
+            }
+            .header{                
+                display:flex;
+                flex-direction:row;
+                justify-content:space-between;
+                align-items: center;
+                flex-wrap:nowrap;
+                width:95%;
+                min-height:40px;
+                font:900 1.3rem "Arial";
+                border-bottom:1px solid rgb(100,100,100);
+                background: var(--back-color);
+                color: var(--font-color);
+            }
+            span{
+                display:flex;
+                flex-direction:row;
+                justify-content:center;
+                padding-inline:0.3rem;
+                overflow:hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                text-transform:uppercase;
+                letter-spacing: 0.2rem;
+            }
+            span.id{
+                display:flex;
+                flex-direction:row;
+                gap:0;
+                flex-basis:6%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.product-id{
+                flex-basis:25%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.brand{
+                flex-basis:10%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.price{
+                flex-basis:10%;
+                border-right: 1px solid rgb(100,100,100);
+            }
+            span.product{
+                flex-basis:50%;
             }
         </style>
     `

@@ -19,10 +19,10 @@ export default class FilterComponent extends HTMLElement {
     connectedCallback() {
         this.dom.form.addEventListener("submit", async (e) => {
             e.preventDefault();
-            this.submitDebounce(this.dom.form);
+            this.onSubmit(this.dom.form);
         });
     }
-    private submitDebounce = (form: HTMLFormElement) => {
+    private onSubmit = (form: HTMLFormElement) => {
         this.query = new Map<string, string | number>();
         this.dom.submit.classList.add("inaccess");
         [...form.elements].forEach((input: HTMLFormElement) => {
@@ -34,7 +34,6 @@ export default class FilterComponent extends HTMLElement {
         this.subscribers.push(fn);
     }
     notify(query: QueryFilter) {
-        
         this.subscribers.forEach((fn) => {
             fn(query);
         })
@@ -71,16 +70,18 @@ function renderTemplate() {
         <style>
         :host{
             display:flex;
-            width:100%;
-            min-height:50px;
+            width:250px;
+            min-height:100vh;
+            box-shadow: 5px 0 10px 10px rgba(20,20,20,0.5);
         }
             form{
+                padding:2rem;
                 display:flex;
-                flex-direction: row;
-                justify-content: space-evenly;
+                flex-direction: column;
+                justify-content: start;
                 align-items: center;
+                gap:2rem;
                 width:100%;
-                min-height: 50px;
                 background: rgb(50,50,60);
                 color: rgb(200,200,200);
 

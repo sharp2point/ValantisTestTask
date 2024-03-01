@@ -67,7 +67,7 @@ export default class Paginator extends HTMLElement {
     }
     private updateContent = (countPage?: number) => {
         this.pageCount = countPage || this.pageCount;
-        this.dom.position.textContent = `${this.cursor + 1} из ${this.pageCount}`;
+        this.dom.position.textContent = `${this.cursor + 1}`; //из ${this.pageCount}
     }
 }
 if (!customElements.get("nice2jm-page-paginator")) {

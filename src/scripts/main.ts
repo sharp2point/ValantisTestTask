@@ -7,7 +7,7 @@ import PageManager from "./page_manager";
 import Loader from "./components/loader/loader";
 import FilterComponent from "./components/filter/filter";
 import { getFilterData } from "./filter/filter";
-import { appendPageToDocument, clearDublicateID, clearDublicateProduct, clearNotify, closeFilterNotifyAction, isQueryEmpty, shiftOffset } from "./utils/utils";
+import { appendPageToDocument, clearDublicateProduct, clearNotify, closeFilterNotifyAction, initFilterButton, isQueryEmpty, shiftOffset } from "./utils/utils";
 import NotifyComponent from "./notyfy/notify";
 
 
@@ -23,8 +23,8 @@ window.addEventListener('load', async () => {
     APPSTATE.filterPageManager.addSubscriber(appendPageToDocument);
     APPSTATE.pageManagerFocused = APPSTATE.pageManager;
     APPSTATE.paginator = new Paginator(APPSTATE.pageManager);
-    APPSTATE.paginator.appendToDOM(document.querySelector(".paginator-place")!);
-
+    APPSTATE.paginator.appendToDOM(document.querySelector(".settings")!);
+    initFilterButton();
     // Get Data Form API
     getProductData({ offset: APPSTATE.loadOffset, limit: APPSTATE.loadLimit }).then((products) => {
         return fillPage(clearDublicateProduct(products), APPSTATE.pageManager);
@@ -39,14 +39,13 @@ window.addEventListener('load', async () => {
 
 async function getProductData(options: { offset: number, limit: number }) {
     const ids_raw = await getDataFromApi(APICOMMANDS.getIDs({ offset: options.offset, limit: options.limit }));
-    //const ids = clearDublicateID(ids_raw.result);
     const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids_raw.result }));
     return Promise.resolve(products.result);
 }
 function fillPage(products: Array<Product>, pageManager: PageManager) {
     let page = pageManager.pageRemaind();
     for (let i = 0; i < products.length; i++) {
-        const result = page.addProduct(products[i]);        
+        const result = page.addProduct(products[i]);
         if (!result) {
             fillPage(products.slice(i, products.length - 1), pageManager);
             break;
@@ -78,7 +77,7 @@ async function queryFilter(query: QueryFilter) {
         APPSTATE.pageManagerFocused = APPSTATE.filterPageManager;
         getFilterData(query).then((products) => {
             const notify = new NotifyComponent("result-notify", `всего ${products.length}`);
-            notify.appendToDOM(document.querySelector(".notify-place"));
+            notify.appendToDOM(document.querySelector(".settings"));
             return fillPage(clearDublicateProduct(products), APPSTATE.filterPageManager);
         }).then((pageManager) => {
             APPSTATE.loader.show(false);
@@ -90,9 +89,10 @@ async function queryFilter(query: QueryFilter) {
                 return appendPageToDocument(notify)
             }
         }).then(() => {
+            APPSTATE.filter.classList.toggle("open-filter");
             const notify = new NotifyComponent("filter-mode-notify", "Фильтр");
             notify.attachClickAction(closeFilterNotifyAction, "Закрыть");
-            notify.appendToDOM(document.querySelector(".notify-place"));
+            notify.appendToDOM(document.querySelector(".settings"));
         }).catch((err) => {
             console.error("Filter Request Error: ", err);
             setTimeout(() => {
