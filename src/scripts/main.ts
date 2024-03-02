@@ -7,7 +7,7 @@ import PageManager from "./page_manager";
 import Loader from "./components/loader/loader";
 import FilterComponent from "./components/filter/filter";
 import { getFilterData } from "./filter/filter";
-import { appendPageToDocument, clearDublicateProduct, clearNotify, closeFilterNotifyAction, initFilterButton, isQueryEmpty, shiftOffset } from "./utils/utils";
+import { appendPageToDocument, clearDublicateProduct, clearNotify, closeFilterActionButton, closeFilterNotifyAction, initFilterButton, isQueryEmpty, shiftOffset } from "./utils/utils";
 import NotifyComponent from "./notyfy/notify";
 
 
@@ -15,6 +15,7 @@ window.addEventListener('load', async () => {
     APPSTATE.rootApp = document.querySelector("#app");
     APPSTATE.filter = document.querySelector('.filter') as FilterComponent;
     APPSTATE.filter.addSubscriber(queryFilter);
+    APPSTATE.filter.addCloseAction(closeFilterActionButton);
     APPSTATE.loader = new Loader();
     APPSTATE.loader.appendToDOM(APPSTATE.rootApp);
     APPSTATE.pageManager = new PageManager("main", uploadData);
@@ -77,7 +78,7 @@ async function queryFilter(query: QueryFilter) {
         APPSTATE.pageManagerFocused = APPSTATE.filterPageManager;
         getFilterData(query).then((products) => {
             const notify = new NotifyComponent("result-notify", `всего ${products.length}`);
-            notify.appendToDOM(document.querySelector(".settings"));
+            notify.appendToDOM(document.querySelector(".notify"));
             return fillPage(clearDublicateProduct(products), APPSTATE.filterPageManager);
         }).then((pageManager) => {
             APPSTATE.loader.show(false);
@@ -90,9 +91,6 @@ async function queryFilter(query: QueryFilter) {
             }
         }).then(() => {
             APPSTATE.filter.classList.toggle("open-filter");
-            const notify = new NotifyComponent("filter-mode-notify", "Фильтр");
-            notify.attachClickAction(closeFilterNotifyAction, "Закрыть");
-            notify.appendToDOM(document.querySelector(".settings"));
         }).catch((err) => {
             console.error("Filter Request Error: ", err);
             setTimeout(() => {

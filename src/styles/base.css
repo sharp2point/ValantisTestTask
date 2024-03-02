@@ -31,12 +31,21 @@
     }
 }
 .settings{
-    position:sticky;
-    left:0;
+    position:fixed;
+    left:40vw;
     top:calc(100vh - 100px);
     display:flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
     gap:1rem;
+
+    .notify{
+        display:flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 1rem;
+        align-items: center;
+        gap:0.5rem;
+    }
 }

@@ -8,13 +8,15 @@
     <script type="module" src="./scripts/components/filter/filter.ts"></script>
 </head>
 <body>
+    <div class="settings">
+        <button class="filter-button"><img src="/public/filter.png" alt="фильтр"></button>
+        <div class="notify"></div>
+    </div>
     <div id="app">
-        <nice2jm-filter class="filter"></nice2jm-filter>
-        <div class="settings">
-            <button class="filter-button"><img src="/public/filter.png" alt="фильтр"></button>
-        </div>        
+               
         <div class="app-page"></div>        
     </div>
+    <nice2jm-filter class="filter"></nice2jm-filter>
     <script type="module" src="./scripts/main.ts"></script>
 </body>
 </html>

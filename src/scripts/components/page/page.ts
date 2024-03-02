@@ -62,7 +62,6 @@ function renderTemplate() {
                 gap:0.1rem;
                 background:rgb(100,100,100);
                 width:100%;
-                margin:1rem;
                 border:3px solid rgb(150,150,150);
             }
             .header{                

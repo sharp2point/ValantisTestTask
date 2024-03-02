@@ -597,6 +597,7 @@ window.addEventListener("load", async ()=>{
     (0, _appstate.APPSTATE).rootApp = document.querySelector("#app");
     (0, _appstate.APPSTATE).filter = document.querySelector(".filter");
     (0, _appstate.APPSTATE).filter.addSubscriber(queryFilter);
+    (0, _appstate.APPSTATE).filter.addCloseAction((0, _utils.closeFilterActionButton));
     (0, _appstate.APPSTATE).loader = new (0, _loaderDefault.default)();
     (0, _appstate.APPSTATE).loader.appendToDOM((0, _appstate.APPSTATE).rootApp);
     (0, _appstate.APPSTATE).pageManager = new (0, _pageManagerDefault.default)("main", uploadData);
@@ -671,7 +672,7 @@ async function queryFilter(query) {
         (0, _appstate.APPSTATE).pageManagerFocused = (0, _appstate.APPSTATE).filterPageManager;
         (0, _filter.getFilterData)(query).then((products)=>{
             const notify = new (0, _notifyDefault.default)("result-notify", `\u{432}\u{441}\u{435}\u{433}\u{43E} ${products.length}`);
-            notify.appendToDOM(document.querySelector(".settings"));
+            notify.appendToDOM(document.querySelector(".notify"));
             return fillPage((0, _utils.clearDublicateProduct)(products), (0, _appstate.APPSTATE).filterPageManager);
         }).then((pageManager)=>{
             (0, _appstate.APPSTATE).loader.show(false);
@@ -683,9 +684,6 @@ async function queryFilter(query) {
             }
         }).then(()=>{
             (0, _appstate.APPSTATE).filter.classList.toggle("open-filter");
-            const notify = new (0, _notifyDefault.default)("filter-mode-notify", "\u0424\u0438\u043B\u044C\u0442\u0440");
-            notify.attachClickAction((0, _utils.closeFilterNotifyAction), "\u0417\u0430\u043A\u0440\u044B\u0442\u044C");
-            notify.appendToDOM(document.querySelector(".settings"));
         }).catch((err)=>{
             console.error("Filter Request Error: ", err);
             setTimeout(()=>{
@@ -1838,7 +1836,7 @@ class PageManager {
 }
 exports.default = PageManager;
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./appstate/appstate":"eMp2h","./components/page/page":"hCezX"}],"hCezX":[function(require,module,exports) {
+},{"./appstate/appstate":"eMp2h","./components/page/page":"hCezX","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hCezX":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _product = require("../product/product");
@@ -1900,7 +1898,6 @@ function renderTemplate() {
                 gap:0.1rem;
                 background:rgb(100,100,100);
                 width:100%;
-                margin:1rem;
                 border:3px solid rgb(150,150,150);
             }
             .header{                
@@ -2294,6 +2291,7 @@ parcelHelpers.export(exports, "isQueryEmpty", ()=>isQueryEmpty);
 parcelHelpers.export(exports, "clearFilter", ()=>clearFilter);
 parcelHelpers.export(exports, "clearNotify", ()=>clearNotify);
 parcelHelpers.export(exports, "closeFilterNotifyAction", ()=>closeFilterNotifyAction);
+parcelHelpers.export(exports, "closeFilterActionButton", ()=>closeFilterActionButton);
 parcelHelpers.export(exports, "initFilterButton", ()=>initFilterButton);
 var _appstate = require("../appstate/appstate");
 function clearDublicateID(data) {
@@ -2339,19 +2337,38 @@ function clearFilter() {
     appendPageToDocument((0, _appstate.APPSTATE).pageManagerFocused.getFirstPage());
 }
 function clearNotify() {
-// const notifyPlace = document.querySelector(".notify-place");
-// while (notifyPlace.firstChild) {
-//     notifyPlace.removeChild(notifyPlace.firstChild);
-// }
+    const notifyPlace = document.querySelector(".notify");
+    while(notifyPlace.firstChild)notifyPlace.removeChild(notifyPlace.firstChild);
 }
 function closeFilterNotifyAction(nameNotify) {
     clearFilter();
 }
+function closeFilterActionButton() {
+    const filterButtonImg = document.querySelector(".filter-button>img");
+    const filter = document.querySelector(".filter");
+    filter.classList.toggle("open-filter");
+    clearFilter();
+    filterButtonImg.src = "../filter.webp";
+}
 function initFilterButton() {
     const filterButton = document.querySelector(".filter-button");
+    const filterButtonImg = document.querySelector(".filter-button>img");
     const filter = document.querySelector(".filter");
+    let filterState = false;
     filterButton.addEventListener("click", ()=>{
-        filter.classList.toggle("open-filter");
+        if (!filterState) {
+            const res = filter.classList.toggle("open-filter");
+            res ? filterButtonImg.src = "../filter_close.webp" : filterButtonImg.src = "../filter.webp";
+            filterState = res;
+        } else if ((0, _appstate.APPSTATE).pageManagerFocused.name === "filter") {
+            clearFilter();
+            filterButtonImg.src = "../filter.webp";
+            filterState = false;
+        } else {
+            filter.classList.toggle("open-filter");
+            filterButtonImg.src = "../filter.webp";
+            filterState = false;
+        }
     });
 }
 

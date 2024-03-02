@@ -41,19 +41,45 @@ export function clearFilter() {
     appendPageToDocument(APPSTATE.pageManagerFocused.getFirstPage());
 }
 export function clearNotify() {
-    // const notifyPlace = document.querySelector(".notify-place");
-    // while (notifyPlace.firstChild) {
-    //     notifyPlace.removeChild(notifyPlace.firstChild);
-    // }
+    const notifyPlace = document.querySelector(".notify");
+    while (notifyPlace.firstChild) {
+        notifyPlace.removeChild(notifyPlace.firstChild);
+    }
 }
 
 export function closeFilterNotifyAction(nameNotify: string) {
     clearFilter();
 }
+export function closeFilterActionButton() {
+    const filterButtonImg = document.querySelector(".filter-button>img") as HTMLImageElement;
+    const filter = document.querySelector(".filter");
+    filter.classList.toggle("open-filter");
+    clearFilter();
+    filterButtonImg.src = "../filter.webp";
+}    
 export function initFilterButton() {
     const filterButton = document.querySelector(".filter-button");
+    const filterButtonImg = document.querySelector(".filter-button>img") as HTMLImageElement;
     const filter = document.querySelector(".filter");
+    let filterState = false;
     filterButton.addEventListener("click", () => {
-        filter.classList.toggle("open-filter");
+        if (!filterState) {
+            const res = filter.classList.toggle("open-filter");
+            res ?
+                filterButtonImg.src = "../filter_close.webp"
+                : filterButtonImg.src = "../filter.webp";
+            filterState = res;
+
+        } else {
+            if (APPSTATE.pageManagerFocused.name === "filter") {
+                clearFilter();
+                filterButtonImg.src = "../filter.webp";
+                filterState = false;
+            } else {
+                filter.classList.toggle("open-filter");
+                filterButtonImg.src = "../filter.webp";
+                filterState = false;
+            }
+        }
     })
 }

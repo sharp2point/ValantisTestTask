@@ -4,10 +4,13 @@ export default class FilterComponent extends HTMLElement {
     private root: ShadowRoot;
     private dom = {
         form: null,
-        submit: null
+        submit: null,
+        closeFilterButton: null,
+        inputs: null
     }
     private subscribers = new Array<((query: QueryFilter) => void)>();
     private query: QueryFilter
+    private closeAction: () => void;
 
     constructor() {
         super();
@@ -15,20 +18,51 @@ export default class FilterComponent extends HTMLElement {
         this.root.innerHTML = renderTemplate();
         this.dom.form = this.root.querySelector("form");
         this.dom.submit = this.root.querySelector("button[type=submit]");
+        this.dom.closeFilterButton = this.root.querySelector("header button");
+        
     }
     connectedCallback() {
-        this.dom.form.addEventListener("submit", async (e) => {
+        this.dom.form.addEventListener("click", async (e) => {
+            e.stopPropagation();
             e.preventDefault();
-            this.onSubmit(this.dom.form);
+            if (e.target.classList.contains("clear-button")) {
+                switch (e.target.dataset["name"]) {
+                    case "product": {
+                        console.log("product")
+                        const inp = this.root.getElementById("product") as HTMLInputElement;
+                        inp.value = "";
+                        break;
+                    }
+                    case "brand": {
+                        const inp = this.root.getElementById("brand") as HTMLInputElement;
+                        inp.value = "";
+                        break;
+                    }
+                    case "price": {
+                        const inp = this.root.getElementById("price") as HTMLInputElement;
+                        inp.value = "";
+                        break;
+                    }
+                }
+            } else {
+                this.onSubmit(this.dom.form);
+            }
         });
+        this.dom.closeFilterButton.addEventListener("click", () => {
+            this.closeAction();
+        })
     }
     private onSubmit = (form: HTMLFormElement) => {
         this.query = new Map<string, string | number>();
         this.dom.submit.classList.add("inaccess");
+
         [...form.elements].forEach((input: HTMLFormElement) => {
             this.query.set(input.name, input.value);
         });
         this.notify(this.query);
+    }
+    addCloseAction(fn: () => void) {
+        this.closeAction = fn;
     }
     addSubscriber(fn: () => void) {
         this.subscribers.push(fn);
@@ -49,50 +83,171 @@ if (!customElements.get("nice2jm-filter")) {
 //-----------------------------------------------
 function renderTemplate() {
     const html = `
+            <header>
+                <img src="gem.webp"><span>Фильтр</span><button class="filter-close"></button>
+            </header>
             <form id="filter-form" action="">
-                <label for="product">
-                    Название продукта:
-                    <input type="text" name="product" id="product" placeholder="Золотое кольцо">
-                </label>
-                <label for="brand">
-                    Бренд:
-                    <input type="text" name="brand" id="brand" placeholder="Piaget">
-                </label>
-                <label for="price">
-                    Цена:
-                    <input type="text" name="price" id="price" placeholder="17500">
-                </label>
-
-                <button type="submit">Поиск</button>
+                <div class="frame">
+                    <label for="product">Название продукта:</label>
+                    <div class="block">
+                        <input type="text" name="product" id="product" placeholder="Золотое кольцо" minlength:"3">
+                        <button class="clear-button" data-name="product"></button>
+                    </div>
+                </div>
+                <div class="frame">
+                    <label for="brand">Бренд:</label>
+                    <div class="block">
+                        <input type="text" name="brand" id="brand" placeholder="Piaget" minlength:"3">
+                        <button class="clear-button" data-name="brand"></button>
+                    </div>
+                </div>
+                <div class="frame">
+                    <label for="price">Цена:</label>
+                    <div class="block">
+                        <input type="text" name="price" id="price" placeholder="17500" minlength:"3">
+                        <button class="clear-button" data-name="price"></button>
+                    </div>
+                </div>
+                <button type="submit"></button>
             </form>
     `;
     const css = `
         <style>
         :host{
             display:flex;
+            flex-direction:column;
+            justify-content:start;
+            align-items:center;
             width:250px;
             min-height:100vh;
-            box-shadow: 5px 0 10px 10px rgba(20,20,20,0.5);
+            box-shadow: 5px 0 10px 2px rgba(20,20,20,0.5);
+            background: rgba(50,50,60,0.9);
         }
-            form{
-                padding:2rem;
-                display:flex;
-                flex-direction: column;
-                justify-content: start;
-                align-items: center;
-                gap:2rem;
-                width:100%;
-                background: rgb(50,50,60);
-                color: rgb(200,200,200);
-
-                label{
-                    font: 600 1.2rem "Arial";
-                }
-                button[type=submit]{
-                    font: 600 1.2rem "Arial";
-                    padding:0.5rem;
-                }
-            }
+        header{
+            width:88%;
+            height:40px;
+            display:flex;
+            flex-direction:row;
+            justify-content:space-between;
+            align-items:center;
+            gap:1rem;
+            padding:1rem;
+            background: rgba(150,150,120,0.9);
+            border-bottom:1px solid rgba(100,100,100,0.5);
+            border-radius: 0 0 1rem 1rem;
+            box-shadow: 0 2px 3px 1px rgba(10,10,10,0.2);
+        }
+        header img{
+            width:40px;
+            height:40px;
+        }
+        header span{
+            font:bold 2rem "Arial";
+            color:rgb(230,230,230);
+        }
+        header button{
+            width:35px;
+            height:35px;
+            border:none;
+            background:rgba(200,200,200,1);
+            border-radius:50%;
+            background-image: url("no.png");
+            background-size:33px 33px;
+            background-position:center center;
+            background-repeat:no-repeat;
+        }
+        header button:hover{
+            transform:scale(1.05);
+        }
+        form{
+            padding:2rem;
+            display:flex;
+            flex-direction: column;
+            justify-content: start;
+            align-items: start;
+            gap:1rem;
+            width:80%;
+            background: transparent;
+        }
+        input[type=text]{
+            font:1.5rem ;
+            padding: 10px;
+            width: 80%;
+            height:35px;
+            border: 1px solid gray;
+            border-radius:0.5rem;
+            background: rgb(90,90,110);
+            color:rgb(250,250,250);
+            padding:0.3rem;
+        }
+        input[type=text]:focus{
+            border: 1px solid green;
+            border-radius:0.7rem;
+            background:rgb(250,250,200);            
+        }
+        button[type=submit]{
+            width:70px;
+            height:70px;
+            font: 600 1.2rem "Arial";
+            padding:0.5rem;
+            background: rgba(70,80,100);
+            background-repeat:no-repeat;
+            background-position:center center;
+            background-image:url("search.png");
+            background-size:40px 40px;
+            border:3px solid rgba(60,60,100);
+            border-radius:50%;
+            box-shadow:0 0 3px 1px rgba(70,70,70,0.5);
+            align-self:center;
+        }
+        button[type=submit]:hover{
+            transform: scale(1.05);
+            font: 600 1.2rem "Arial";
+            padding:0.5rem;
+            background: rgba(70,80,100);
+            background-repeat:no-repeat;
+            background-position:center center;
+            background-image:url("search.png");
+            background-size:35px 35px;
+            border:3px solid rgba(60,60,100);
+            border-radius:50%;
+            box-shadow:0 0 4px 1px rgba(230,230,250,1);
+            cursor:pointer;
+        }
+        .frame{
+            width:100%;
+            display:flex;
+            flex-direction:column;
+            align-items:start;
+            justify-content:start;
+            height:100px;
+            gap:1rem;
+            border-bottom: 1px solid rgba(200,200,200,0.3);          
+        }
+        label{
+            color:rgb(200,200,200);
+            font:bold 1.3rem "Arial";
+        }
+        .block{
+            width:100%;
+            display:flex;
+            flex-direction:row;
+            align-items:center;
+            justify-content:space-between;
+            gap:0.5rem;
+        }
+        .clear-button{
+            width:35px;
+            height:35px;
+            border:none;
+            background: transparent;
+            background-repeat:no-repeat;
+            background-position:center center;
+            background-image:url("delete.png");
+            background-size:30px 30px;
+            cursor:pointer;
+        }
+        
         </style>
     `
     return `${html}${css}`;
