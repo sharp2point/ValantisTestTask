@@ -26,22 +26,19 @@ window.addEventListener('load', async () => {
     APPSTATE.paginator = new Paginator(APPSTATE.pageManager);
     APPSTATE.paginator.appendToDOM(document.querySelector(".settings")!);
     initFilterButton();
-    // Get Data Form API
-    getProductData({ offset: APPSTATE.loadOffset, limit: APPSTATE.loadLimit }).then((products) => {
-        return fillPage(clearDublicateProduct(products), APPSTATE.pageManager);
-    }).then((pageManager) => {
-        shiftOffset();
-        APPSTATE.loader.show(false);
-        return appendPageToDocument(pageManager.getFirstPage());
-    }).catch((err) => {
-        console.error("Get Product Error: ", err);
-    });
+    console.clear();
+    //-----------------------------------------------------------------------//
+    startAppData();
 });
 
 async function getProductData(options: { offset: number, limit: number }) {
-    const ids_raw = await getDataFromApi(APICOMMANDS.getIDs({ offset: options.offset, limit: options.limit }));
-    const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids_raw.result }));
-    return Promise.resolve(products.result);
+    const ids = await getDataFromApi(APICOMMANDS.getIDs({ offset: options.offset, limit: options.limit }));
+    if (ids.result) {
+        const products = await getDataFromApi(APICOMMANDS.getItems({ ids: ids.result }));
+        return Promise.resolve(products.result);
+    } else {
+        return Promise.reject();
+    }
 }
 function fillPage(products: Array<Product>, pageManager: PageManager) {
     let page = pageManager.pageRemaind();
@@ -62,10 +59,23 @@ function uploadData() {
     }).then(() => {
         APPSTATE.loader.show(false);
     }).catch((err) => {
-        console.error("Product Request Error: ", err);
         setTimeout(() => {
             console.log("Product Request Repeat")
             uploadData();
+        }, 1000);
+    });
+}
+function startAppData() {
+    getProductData({ offset: APPSTATE.loadOffset, limit: APPSTATE.loadLimit }).then((products) => {
+        return fillPage(clearDublicateProduct(products), APPSTATE.pageManager);
+    }).then((pageManager) => {
+        shiftOffset();
+        APPSTATE.loader.show(false);
+        return appendPageToDocument(pageManager.getFirstPage());
+    }).catch((err) => {
+        setTimeout(() => {
+            console.log("Filter Request Repeat")
+            startAppData();
         }, 1000);
     });
 }
@@ -92,7 +102,6 @@ async function queryFilter(query: QueryFilter) {
         }).then(() => {
             APPSTATE.filter.classList.toggle("open-filter");
         }).catch((err) => {
-            console.error("Filter Request Error: ", err);
             setTimeout(() => {
                 console.log("Filter Request Repeat")
                 queryFilter(query);

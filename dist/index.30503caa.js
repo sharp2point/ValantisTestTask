@@ -615,29 +615,21 @@ window.addEventListener("load", async ()=>{
     (0, _appstate.APPSTATE).paginator = new (0, _paginatorDefault.default)((0, _appstate.APPSTATE).pageManager);
     (0, _appstate.APPSTATE).paginator.appendToDOM(document.querySelector(".settings"));
     (0, _utils.initFilterButton)();
-    // Get Data Form API
-    getProductData({
-        offset: (0, _appstate.APPSTATE).loadOffset,
-        limit: (0, _appstate.APPSTATE).loadLimit
-    }).then((products)=>{
-        return fillPage((0, _utils.clearDublicateProduct)(products), (0, _appstate.APPSTATE).pageManager);
-    }).then((pageManager)=>{
-        (0, _utils.shiftOffset)();
-        (0, _appstate.APPSTATE).loader.show(false);
-        return (0, _utils.appendPageToDocument)(pageManager.getFirstPage());
-    }).catch((err)=>{
-        console.error("Get Product Error: ", err);
-    });
+    console.clear();
+    //-----------------------------------------------------------------------//
+    startAppData();
 });
 async function getProductData(options) {
-    const ids_raw = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getIDs({
+    const ids = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getIDs({
         offset: options.offset,
         limit: options.limit
     }));
-    const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
-        ids: ids_raw.result
-    }));
-    return Promise.resolve(products.result);
+    if (ids.result) {
+        const products = await (0, _api.getDataFromApi)((0, _apiCommands.APICOMMANDS).getItems({
+            ids: ids.result
+        }));
+        return Promise.resolve(products.result);
+    } else return Promise.reject();
 }
 function fillPage(products, pageManager) {
     let page = pageManager.pageRemaind();
@@ -661,10 +653,26 @@ function uploadData() {
     }).then(()=>{
         (0, _appstate.APPSTATE).loader.show(false);
     }).catch((err)=>{
-        console.error("Product Request Error: ", err);
         setTimeout(()=>{
             console.log("Product Request Repeat");
             uploadData();
+        }, 1000);
+    });
+}
+function startAppData() {
+    getProductData({
+        offset: (0, _appstate.APPSTATE).loadOffset,
+        limit: (0, _appstate.APPSTATE).loadLimit
+    }).then((products)=>{
+        return fillPage((0, _utils.clearDublicateProduct)(products), (0, _appstate.APPSTATE).pageManager);
+    }).then((pageManager)=>{
+        (0, _utils.shiftOffset)();
+        (0, _appstate.APPSTATE).loader.show(false);
+        return (0, _utils.appendPageToDocument)(pageManager.getFirstPage());
+    }).catch((err)=>{
+        setTimeout(()=>{
+            console.log("Filter Request Repeat");
+            startAppData();
         }, 1000);
     });
 }
@@ -690,7 +698,6 @@ async function queryFilter(query) {
         }).then(()=>{
             (0, _appstate.APPSTATE).filter.classList.toggle("open-filter");
         }).catch((err)=>{
-            console.error("Filter Request Error: ", err);
             setTimeout(()=>{
                 console.log("Filter Request Repeat");
                 queryFilter(query);
@@ -706,7 +713,7 @@ parcelHelpers.export(exports, "getDataFromApi", ()=>getDataFromApi);
 var _utils = require("../../scripts/utils/utils");
 var _appstate = require("../appstate/appstate");
 async function getDataFromApi(command) {
-    const result = await fetch((0, _appstate.APPSTATE).apiURL, {
+    const request = new Request((0, _appstate.APPSTATE).apiURL, {
         method: "POST",
         mode: "cors",
         cache: "no-cache",
@@ -717,7 +724,22 @@ async function getDataFromApi(command) {
         },
         body: JSON.stringify(command)
     });
-    return result.json();
+    //---------------------------------------------
+    let count = 10;
+    while(count)return getData(request).then((result)=>{
+        return result.json();
+    }).catch(()=>{
+        count -= 1;
+        if (count > 0) console.log(`\u{41A}\u{43E}\u{43B}-\u{432}\u{43E} \u{43F}\u{43E}\u{432}\u{442}\u{43E}\u{440}\u{43E}\u{432} \u{437}\u{430}\u{43F}\u{440}\u{43E}\u{441}\u{430}: ${10 - count}`);
+    });
+}
+async function getData(request) {
+    const result = await fetch(request.clone());
+    if (result.status >= 200 && result.status < 400) return Promise.resolve(result);
+    else {
+        console.log(`Error: ${result.statusText} -> ${result.status}`);
+        return Promise.reject(false);
+    }
 }
 
 },{"../../scripts/utils/utils":"ccful","../appstate/appstate":"joGLK","@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}],"ccful":[function(require,module,exports) {
@@ -2156,7 +2178,7 @@ class Loader extends HTMLElement {
         });
         this.root.innerHTML = renderTemplate();
         this.setAttribute("class", "loader-screen");
-        this.root.querySelector("img").src = "gem.webp";
+        this.root.querySelector("img").src = "public/gem.webp";
     }
     appendToDOM = (parent)=>parent.appendChild(this);
     show(is_show) {
@@ -2211,7 +2233,7 @@ function renderTemplate() {
             position: absolute;
             top:0;
             left:0;
-            background-color: rgba(255, 255, 255, 0.3);
+            background-color: rgba(30, 25, 115, 0.7);
             display:flex;
             justify-content: center;
             align-items: center;
@@ -2246,10 +2268,10 @@ function renderTemplate() {
             position: absolute;
             top: 0;
             left: 0;
-            width: 20px;
-            height: 20px;
-            border:1px solid rgba(57, 6, 197, 0.9);
-            border-radius: 5%;
+            width: 40px;
+            height: 40px;
+            border:1px solid rgba(157, 160, 0, 0.9);
+            border-radius: 30%;
             transform: scale(5);
             transform: rotate(calc(18deg * var(--i)));
             animation: scaleanim 3s linear infinite;

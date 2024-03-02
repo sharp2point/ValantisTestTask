@@ -675,7 +675,7 @@ if (!customElements.get("nice2jm-filter")) customElements.define("nice2jm-filter
 function renderTemplate() {
     const html = `
             <header>
-                <img src="gem.webp"><span>\u{424}\u{438}\u{43B}\u{44C}\u{442}\u{440}</span><button class="filter-close"></button>
+                <img src="public/gem.webp"><span>\u{424}\u{438}\u{43B}\u{44C}\u{442}\u{440}</span><button class="filter-close"></button>
             </header>            
             <form id="filter-form" action="">
                 <div class="frame">
@@ -742,7 +742,7 @@ function renderTemplate() {
             border:none;
             background:rgba(200,200,200,1);
             border-radius:50%;
-            background-image: url("no.png");
+            background-image: url("public/no.png");
             background-size:33px 33px;
             background-position:center center;
             background-repeat:no-repeat;
@@ -790,26 +790,18 @@ function renderTemplate() {
             background: rgba(70,80,100);
             background-repeat:no-repeat;
             background-position:center center;
-            background-image:url("search.png");
+            background-image:url("public/search.png");
             background-size:40px 40px;
             border:3px solid rgba(60,60,100);
             border-radius:50%;
             box-shadow:0 0 3px 1px rgba(70,70,70,0.5);
             align-self:center;
+            cursor:pointer;
         }
         button[type=submit]:hover{
             transform: scale(1.05);
-            font: 600 1.2rem "Arial";
-            padding:0.5rem;
-            background: rgba(70,80,100);
-            background-repeat:no-repeat;
-            background-position:center center;
-            background-image:url("search.png");
             background-size:35px 35px;
-            border:3px solid rgba(60,60,100);
-            border-radius:50%;
-            box-shadow:0 0 4px 1px rgba(230,230,250,1);
-            cursor:pointer;
+            box-shadow:0 0 4px 1px rgba(230,230,250,1);            
         }
         .frame{
             width:100%;
@@ -840,7 +832,7 @@ function renderTemplate() {
             background: transparent;
             background-repeat:no-repeat;
             background-position:center center;
-            background-image:url("delete.png");
+            background-image:url("public/delete.png");
             background-size:30px 30px;
             cursor:pointer;
         }

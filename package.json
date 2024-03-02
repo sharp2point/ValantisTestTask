@@ -2,11 +2,11 @@
   "name": "valantistest",
   "version": "1.0.0",
   "description": "test task for Valantis",
-  "main": "index.js",
   "type": "module",
   "source": "src/index.html",
   "scripts": {
-    "dev": "parcel --no-source-maps",
+    "dev": "parcel",
+    "dev:b": "parcel --no-source-maps",
     "build": "parcel build --no-source-maps --no-scope-hoist --no-cache --public-url public/"
   },
   "staticFiles": {
@@ -28,8 +28,9 @@
   },
   "homepage": "https://github.com/sharp2point/ValantisTestTask#readme",
   "devDependencies": {
-    "@parcel/transformer-typescript-tsc": "^2.11.0",
+    "@parcel/transformer-typescript-tsc": "^2.12.0",
     "parcel": "^2.11.0",
+    "parcel-reporter-static-files-copy": "^1.5.3",
     "typescript": "^5.3.3"
   },
   "dependencies": {

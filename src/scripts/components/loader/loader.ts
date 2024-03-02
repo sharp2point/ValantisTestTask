@@ -6,7 +6,7 @@ export default class Loader extends HTMLElement {
         this.root = this.attachShadow({ mode: 'open' });
         this.root.innerHTML = renderTemplate();
         this.setAttribute("class", "loader-screen");
-        this.root.querySelector("img").src = "gem.webp";
+        this.root.querySelector("img").src = "public/gem.webp";
     }
 
     appendToDOM = (parent: HTMLElement) => parent.appendChild(this);
@@ -66,7 +66,7 @@ function renderTemplate() {
             position: absolute;
             top:0;
             left:0;
-            background-color: rgba(255, 255, 255, 0.3);
+            background-color: rgba(30, 25, 115, 0.7);
             display:flex;
             justify-content: center;
             align-items: center;
@@ -101,10 +101,10 @@ function renderTemplate() {
             position: absolute;
             top: 0;
             left: 0;
-            width: 20px;
-            height: 20px;
-            border:1px solid rgba(57, 6, 197, 0.9);
-            border-radius: 5%;
+            width: 40px;
+            height: 40px;
+            border:1px solid rgba(157, 160, 0, 0.9);
+            border-radius: 30%;
             transform: scale(5);
             transform: rotate(calc(18deg * var(--i)));
             animation: scaleanim 3s linear infinite;
