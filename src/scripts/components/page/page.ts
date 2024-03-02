@@ -1,5 +1,5 @@
 import { Product } from "src/scripts/types/app_types";
-import ProductComponent from "../product/product";
+import ProductComponent from "src/scripts/components/product/product";
 import { APPSTATE } from "src/scripts/appstate/appstate";
 
 export default class PageComponent extends HTMLElement {

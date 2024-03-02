@@ -1,4 +1,4 @@
-import { md5 } from "src/utils/utils";
+import { md5 } from "../../scripts/utils/utils";
 import { APPSTATE } from "../appstate/appstate";
 
 export async function getDataFromApi(command: { action: string, params: {} }) {

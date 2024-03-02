@@ -6,7 +6,7 @@
   "type": "module",
   "source": "src/index.html",
   "scripts": {
-    "dev": "parcel",
+    "dev": "parcel --no-source-maps",
     "build": "parcel build --no-source-maps --no-scope-hoist --no-cache --public-url public/"
   },
   "staticFiles": {

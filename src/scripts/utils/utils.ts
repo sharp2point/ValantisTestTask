@@ -1,6 +1,14 @@
+import MD5 from "crypto-js/md5.js";
 import { APPSTATE } from "../appstate/appstate";
 import PageComponent from "../components/page/page";
 import { Product, QueryFilter } from "../types/app_types";
+
+
+export function md5() {
+    const date = new Date();
+    const partMD5 = date.toISOString().slice(0, 10).replaceAll("-", "");
+    return MD5(`${APPSTATE.password}_${partMD5}`).toString();
+}
 
 export function clearDublicateID(data: Array<string>) {
     return [...new Set([...data])];
