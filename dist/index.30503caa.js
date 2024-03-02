@@ -142,15 +142,16 @@
       this[globalName] = mainExports;
     }
   }
-})({"e7zDJ":[function(require,module,exports) {
+})({"bB8Rd":[function(require,module,exports) {
 var global = arguments[3];
 var HMR_HOST = null;
 var HMR_PORT = null;
 var HMR_SECURE = false;
-var HMR_ENV_HASH = "d6ea1d42532a7575";
-module.bundle.HMR_BUNDLE_ID = "5cb08447482d1c68";
+var HMR_ENV_HASH = "42036d7a98ade5a7";
+var HMR_USE_SSE = false;
+module.bundle.HMR_BUNDLE_ID = "21497b0d30503caa";
 "use strict";
-/* global HMR_HOST, HMR_PORT, HMR_ENV_HASH, HMR_SECURE, chrome, browser, __parcel__import__, __parcel__importScripts__, ServiceWorkerGlobalScope */ /*::
+/* global HMR_HOST, HMR_PORT, HMR_ENV_HASH, HMR_SECURE, HMR_USE_SSE, chrome, browser, __parcel__import__, __parcel__importScripts__, ServiceWorkerGlobalScope */ /*::
 import type {
   HMRAsset,
   HMRMessage,
@@ -189,6 +190,7 @@ declare var HMR_HOST: string;
 declare var HMR_PORT: string;
 declare var HMR_ENV_HASH: string;
 declare var HMR_SECURE: boolean;
+declare var HMR_USE_SSE: boolean;
 declare var chrome: ExtensionContext;
 declare var browser: ExtensionContext;
 declare var __parcel__import__: (string) => Promise<void>;
@@ -232,7 +234,8 @@ if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== "undefined") {
         "0.0.0.0"
     ].includes(hostname) ? "wss" : "ws";
     var ws;
-    try {
+    if (HMR_USE_SSE) ws = new EventSource("/__parcel_hmr");
+    else try {
         ws = new WebSocket(protocol + "://" + hostname + (port ? ":" + port : "") + "/");
     } catch (err) {
         if (err.message) console.error(err.message);
@@ -302,12 +305,14 @@ if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== "undefined") {
             }
         }
     };
-    ws.onerror = function(e) {
-        if (e.message) console.error(e.message);
-    };
-    ws.onclose = function() {
-        console.warn("[parcel] \uD83D\uDEA8 Connection to the HMR server was lost");
-    };
+    if (ws instanceof WebSocket) {
+        ws.onerror = function(e) {
+            if (e.message) console.error(e.message);
+        };
+        ws.onclose = function() {
+            console.warn("[parcel] \uD83D\uDEA8 Connection to the HMR server was lost");
+        };
+    }
 }
 function removeErrorOverlay() {
     var overlay = document.getElementById(OVERLAY_ID);
@@ -578,7 +583,7 @@ function hmrAccept(bundle /*: ParcelRequire */ , id /*: string */ ) {
     });
 }
 
-},{}],"j6eqU":[function(require,module,exports) {
+},{}],"d4YrJ":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 var _api = require("./api/api");
 var _apiCommands = require("./api/api_commands");
@@ -694,11 +699,11 @@ async function queryFilter(query) {
     }
 }
 
-},{"./api/api":"e5BwA","./api/api_commands":"hUXUM","./appstate/appstate":"eMp2h","./components/paginator/paginator":"2HLYK","./page_manager":"j7Bvv","./components/loader/loader":"f3fYZ","./filter/filter":"kDsV9","./utils/utils":"cuzta","./notyfy/notify":"caUfU","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"e5BwA":[function(require,module,exports) {
+},{"./api/api":"6eeY2","./api/api_commands":"kzo89","./appstate/appstate":"joGLK","./components/paginator/paginator":"8wKwG","./page_manager":"iGAnG","./components/loader/loader":"7uXOE","./filter/filter":"kcdKs","./utils/utils":"ccful","./notyfy/notify":"4L79e","@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}],"6eeY2":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getDataFromApi", ()=>getDataFromApi);
-var _utils = require("src/utils/utils");
+var _utils = require("../../scripts/utils/utils");
 var _appstate = require("../appstate/appstate");
 async function getDataFromApi(command) {
     const result = await fetch((0, _appstate.APPSTATE).apiURL, {
@@ -715,20 +720,102 @@ async function getDataFromApi(command) {
     return result.json();
 }
 
-},{"src/utils/utils":"ea5wt","../appstate/appstate":"eMp2h","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"ea5wt":[function(require,module,exports) {
+},{"../../scripts/utils/utils":"ccful","../appstate/appstate":"joGLK","@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}],"ccful":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "md5", ()=>md5);
+parcelHelpers.export(exports, "clearDublicateID", ()=>clearDublicateID);
+parcelHelpers.export(exports, "clearDublicateProduct", ()=>clearDublicateProduct);
+parcelHelpers.export(exports, "shiftOffset", ()=>shiftOffset);
+parcelHelpers.export(exports, "appendPageToDocument", ()=>appendPageToDocument);
+parcelHelpers.export(exports, "isQueryEmpty", ()=>isQueryEmpty);
+parcelHelpers.export(exports, "clearFilter", ()=>clearFilter);
+parcelHelpers.export(exports, "clearNotify", ()=>clearNotify);
+parcelHelpers.export(exports, "closeFilterNotifyAction", ()=>closeFilterNotifyAction);
+parcelHelpers.export(exports, "closeFilterActionButton", ()=>closeFilterActionButton);
+parcelHelpers.export(exports, "initFilterButton", ()=>initFilterButton);
 var _md5Js = require("crypto-js/md5.js");
 var _md5JsDefault = parcelHelpers.interopDefault(_md5Js);
-var _appstate = require("src/scripts/appstate/appstate");
+var _appstate = require("../appstate/appstate");
 function md5() {
     const date = new Date();
     const partMD5 = date.toISOString().slice(0, 10).replaceAll("-", "");
     return (0, _md5JsDefault.default)(`${(0, _appstate.APPSTATE).password}_${partMD5}`).toString();
 }
+function clearDublicateID(data) {
+    return [
+        ...new Set([
+            ...data
+        ])
+    ];
+}
+function clearDublicateProduct(data) {
+    const idMap = new Map();
+    data.forEach((product)=>{
+        if (!idMap.get(product.id)) idMap.set(product.id, product);
+    });
+    return [
+        ...idMap.values()
+    ];
+}
+function shiftOffset() {
+    (0, _appstate.APPSTATE).loadOffset = (0, _appstate.APPSTATE).loadOffset + (0, _appstate.APPSTATE).loadLimit;
+}
+function appendPageToDocument(page) {
+    const pagePlace = document.querySelector(".app-page");
+    if (pagePlace) {
+        pagePlace.replaceChildren(page);
+        return true;
+    }
+    return false;
+}
+function isQueryEmpty(query) {
+    let isEmpty = true;
+    [
+        ...query.values()
+    ].forEach((item)=>{
+        if (item) isEmpty = false;
+    });
+    return isEmpty;
+}
+function clearFilter() {
+    clearNotify();
+    (0, _appstate.APPSTATE).pageManagerFocused = (0, _appstate.APPSTATE).pageManager;
+    (0, _appstate.APPSTATE).paginator.setPageManager((0, _appstate.APPSTATE).pageManagerFocused);
+    appendPageToDocument((0, _appstate.APPSTATE).pageManagerFocused.getFirstPage());
+}
+function clearNotify() {
+    const notifyPlace = document.querySelector(".notify");
+    while(notifyPlace.firstChild)notifyPlace.removeChild(notifyPlace.firstChild);
+}
+function closeFilterNotifyAction(nameNotify) {
+    clearFilter();
+}
+function closeFilterActionButton() {
+    const filter = document.querySelector(".filter");
+    filter.classList.toggle("open-filter");
+    clearFilter();
+//filterButton = "../filter.webp";
+}
+function initFilterButton() {
+    const filterButton = document.querySelector(".filter-button");
+    const filter = document.querySelector(".filter");
+    let filterState = false;
+    filterButton.addEventListener("click", ()=>{
+        if (!filterState) {
+            const res = filter.classList.toggle("open-filter");
+            filterState = res;
+        } else if ((0, _appstate.APPSTATE).pageManagerFocused.name === "filter") {
+            clearFilter();
+            filterState = false;
+        } else {
+            filter.classList.toggle("open-filter");
+            filterState = false;
+        }
+    });
+}
 
-},{"crypto-js/md5.js":"1qHxz","src/scripts/appstate/appstate":"eMp2h","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"1qHxz":[function(require,module,exports) {
+},{"crypto-js/md5.js":"26tNv","../appstate/appstate":"joGLK","@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}],"26tNv":[function(require,module,exports) {
 (function(root, factory) {
     // CommonJS
     module.exports = exports = factory(require("df297d5f1a7605f5"));
@@ -940,7 +1027,7 @@ function md5() {
     return CryptoJS.MD5;
 });
 
-},{"df297d5f1a7605f5":"gcdtm"}],"gcdtm":[function(require,module,exports) {
+},{"df297d5f1a7605f5":"fDlqJ"}],"fDlqJ":[function(require,module,exports) {
 var global = arguments[3];
 (function(root, factory) {
     // CommonJS
@@ -1551,10 +1638,10 @@ var global = arguments[3];
     return CryptoJS;
 });
 
-},{"b7760e5f0b7216d4":"jhUEF"}],"jhUEF":[function(require,module,exports) {
+},{"b7760e5f0b7216d4":"9C0N7"}],"9C0N7":[function(require,module,exports) {
 "use strict";
 
-},{}],"eMp2h":[function(require,module,exports) {
+},{}],"joGLK":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "APPSTATE", ()=>APPSTATE);
@@ -1573,7 +1660,7 @@ const APPSTATE = {
     pageManagerFocused: null
 };
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hUXUM":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}],"kzo89":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "APICOMMANDS", ()=>APICOMMANDS);
@@ -1627,7 +1714,7 @@ function getFields(params) {
     };
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"2HLYK":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}],"8wKwG":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 class Paginator extends HTMLElement {
@@ -1773,7 +1860,7 @@ function renderTemplate(position) {
     return `${html}${css}`;
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"j7Bvv":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}],"iGAnG":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _appstate = require("./appstate/appstate");
@@ -1841,10 +1928,10 @@ class PageManager {
 }
 exports.default = PageManager;
 
-},{"./appstate/appstate":"eMp2h","./components/page/page":"hCezX","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"hCezX":[function(require,module,exports) {
+},{"./appstate/appstate":"joGLK","./components/page/page":"hoyhW","@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}],"hoyhW":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
-var _product = require("../product/product");
+var _product = require("src/scripts/components/product/product");
 var _productDefault = parcelHelpers.interopDefault(_product);
 var _appstate = require("src/scripts/appstate/appstate");
 class PageComponent extends HTMLElement {
@@ -1956,7 +2043,7 @@ function renderTemplate() {
     return `${html}${css}`;
 }
 
-},{"../product/product":"gAdVN","src/scripts/appstate/appstate":"eMp2h","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"gAdVN":[function(require,module,exports) {
+},{"src/scripts/components/product/product":"2i6Pm","src/scripts/appstate/appstate":"joGLK","@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}],"2i6Pm":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 class ProductComponent extends HTMLElement {
@@ -2057,7 +2144,7 @@ function renderTemplate(id, product) {
     return `${html}${css}`;
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"f3fYZ":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}],"7uXOE":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 class Loader extends HTMLElement {
@@ -2217,7 +2304,7 @@ function renderTemplate() {
     return `${html}${css}`;
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"kDsV9":[function(require,module,exports) {
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}],"kcdKs":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "getFilterData", ()=>getFilterData);
@@ -2285,94 +2372,7 @@ function filterIntersect(data) {
     }
 }
 
-},{"../api/api":"e5BwA","../api/api_commands":"hUXUM","../utils/utils":"cuzta","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"cuzta":[function(require,module,exports) {
-var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
-parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "clearDublicateID", ()=>clearDublicateID);
-parcelHelpers.export(exports, "clearDublicateProduct", ()=>clearDublicateProduct);
-parcelHelpers.export(exports, "shiftOffset", ()=>shiftOffset);
-parcelHelpers.export(exports, "appendPageToDocument", ()=>appendPageToDocument);
-parcelHelpers.export(exports, "isQueryEmpty", ()=>isQueryEmpty);
-parcelHelpers.export(exports, "clearFilter", ()=>clearFilter);
-parcelHelpers.export(exports, "clearNotify", ()=>clearNotify);
-parcelHelpers.export(exports, "closeFilterNotifyAction", ()=>closeFilterNotifyAction);
-parcelHelpers.export(exports, "closeFilterActionButton", ()=>closeFilterActionButton);
-parcelHelpers.export(exports, "initFilterButton", ()=>initFilterButton);
-var _appstate = require("../appstate/appstate");
-function clearDublicateID(data) {
-    return [
-        ...new Set([
-            ...data
-        ])
-    ];
-}
-function clearDublicateProduct(data) {
-    const idMap = new Map();
-    data.forEach((product)=>{
-        if (!idMap.get(product.id)) idMap.set(product.id, product);
-    });
-    return [
-        ...idMap.values()
-    ];
-}
-function shiftOffset() {
-    (0, _appstate.APPSTATE).loadOffset = (0, _appstate.APPSTATE).loadOffset + (0, _appstate.APPSTATE).loadLimit;
-}
-function appendPageToDocument(page) {
-    const pagePlace = document.querySelector(".app-page");
-    if (pagePlace) {
-        pagePlace.replaceChildren(page);
-        return true;
-    }
-    return false;
-}
-function isQueryEmpty(query) {
-    let isEmpty = true;
-    [
-        ...query.values()
-    ].forEach((item)=>{
-        if (item) isEmpty = false;
-    });
-    return isEmpty;
-}
-function clearFilter() {
-    clearNotify();
-    (0, _appstate.APPSTATE).pageManagerFocused = (0, _appstate.APPSTATE).pageManager;
-    (0, _appstate.APPSTATE).paginator.setPageManager((0, _appstate.APPSTATE).pageManagerFocused);
-    appendPageToDocument((0, _appstate.APPSTATE).pageManagerFocused.getFirstPage());
-}
-function clearNotify() {
-    const notifyPlace = document.querySelector(".notify");
-    while(notifyPlace.firstChild)notifyPlace.removeChild(notifyPlace.firstChild);
-}
-function closeFilterNotifyAction(nameNotify) {
-    clearFilter();
-}
-function closeFilterActionButton() {
-    const filter = document.querySelector(".filter");
-    filter.classList.toggle("open-filter");
-    clearFilter();
-//filterButton = "../filter.webp";
-}
-function initFilterButton() {
-    const filterButton = document.querySelector(".filter-button");
-    const filter = document.querySelector(".filter");
-    let filterState = false;
-    filterButton.addEventListener("click", ()=>{
-        if (!filterState) {
-            const res = filter.classList.toggle("open-filter");
-            filterState = res;
-        } else if ((0, _appstate.APPSTATE).pageManagerFocused.name === "filter") {
-            clearFilter();
-            filterState = false;
-        } else {
-            filter.classList.toggle("open-filter");
-            filterState = false;
-        }
-    });
-}
-
-},{"../appstate/appstate":"eMp2h","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"caUfU":[function(require,module,exports) {
+},{"../api/api":"6eeY2","../api/api_commands":"kzo89","../utils/utils":"ccful","@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}],"4L79e":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 class NotifyComponent extends HTMLElement {
@@ -2444,6 +2444,5 @@ function renderTemplate(content) {
     return `${html}${css}`;
 }
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}]},["e7zDJ","j6eqU"], "j6eqU", "parcelRequire1910")
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"j7FRh"}]},["bB8Rd","d4YrJ"], "d4YrJ", "parcelRequire1910")
 
-//# sourceMappingURL=index.482d1c68.js.map
