@@ -19,44 +19,53 @@ export default class FilterComponent extends HTMLElement {
         this.dom.form = this.root.querySelector("form");
         this.dom.submit = this.root.querySelector("button[type=submit]");
         this.dom.closeFilterButton = this.root.querySelector("header button");
-        
+        this.dom.inputs = [
+            this.root.querySelector("#product"),
+            this.root.querySelector("#brand"),
+            this.root.querySelector("#price"),
+        ];
     }
     connectedCallback() {
-        this.dom.form.addEventListener("click", async (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            if (e.target.classList.contains("clear-button")) {
-                switch (e.target.dataset["name"]) {
+        this.root.querySelectorAll(".clear-button").forEach(inp => {
+            inp.addEventListener("click", (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                switch ((e.target as HTMLElement).dataset["name"]) {
                     case "product": {
-                        console.log("product")
-                        const inp = this.root.getElementById("product") as HTMLInputElement;
-                        inp.value = "";
+                        (this.root.getElementById('product') as HTMLInputElement).value = "";
                         break;
                     }
                     case "brand": {
-                        const inp = this.root.getElementById("brand") as HTMLInputElement;
-                        inp.value = "";
+                        (this.root.getElementById('brand') as HTMLInputElement).value = "";
                         break;
                     }
                     case "price": {
-                        const inp = this.root.getElementById("price") as HTMLInputElement;
-                        inp.value = "";
+                        (this.root.getElementById('price') as HTMLInputElement).value = "";
                         break;
                     }
                 }
-            } else {
-                this.onSubmit(this.dom.form);
-            }
+            })
+        });
+        this.dom.form.addEventListener("submit", (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.onSubmit(this.dom.form);
         });
         this.dom.closeFilterButton.addEventListener("click", () => {
             this.closeAction();
-        })
+        });
+        this.dom.inputs.forEach(inp => {
+            inp.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    this.onSubmit(this.dom.form);
+                }
+            });
+        });
     }
     private onSubmit = (form: HTMLFormElement) => {
         this.query = new Map<string, string | number>();
         this.dom.submit.classList.add("inaccess");
-
-        [...form.elements].forEach((input: HTMLFormElement) => {
+        [...form.elements].forEach((input: HTMLInputElement) => {
             this.query.set(input.name, input.value);
         });
         this.notify(this.query);
@@ -85,30 +94,30 @@ function renderTemplate() {
     const html = `
             <header>
                 <img src="gem.webp"><span>Фильтр</span><button class="filter-close"></button>
-            </header>
+            </header>            
             <form id="filter-form" action="">
                 <div class="frame">
                     <label for="product">Название продукта:</label>
                     <div class="block">
-                        <input type="text" name="product" id="product" placeholder="Золотое кольцо" minlength:"3">
+                        <input type="text" name="product" id="product">
                         <button class="clear-button" data-name="product"></button>
                     </div>
                 </div>
                 <div class="frame">
                     <label for="brand">Бренд:</label>
                     <div class="block">
-                        <input type="text" name="brand" id="brand" placeholder="Piaget" minlength:"3">
+                        <input type="text" name="brand" id="brand" min:"3" max="25">
                         <button class="clear-button" data-name="brand"></button>
                     </div>
                 </div>
                 <div class="frame">
                     <label for="price">Цена:</label>
                     <div class="block">
-                        <input type="text" name="price" id="price" placeholder="17500" minlength:"3">
+                        <input type="text" name="price" id="price" pattern="[0-9]{1,9}" title="воводите только числа">
                         <button class="clear-button" data-name="price"></button>
                     </div>
                 </div>
-                <button type="submit"></button>
+                <button type="submit" accesskey="Enter"></button>
             </form>
     `;
     const css = `
@@ -170,20 +179,26 @@ function renderTemplate() {
             background: transparent;
         }
         input[type=text]{
-            font:1.5rem ;
+            font:100 1.2rem "Arial";
             padding: 10px;
             width: 80%;
             height:35px;
-            border: 1px solid gray;
+            border:none;
             border-radius:0.5rem;
             background: rgb(90,90,110);
-            color:rgb(250,250,250);
+            color:rgb(220,220,220);
             padding:0.3rem;
         }
         input[type=text]:focus{
             border: 1px solid green;
             border-radius:0.7rem;
+            color:rgb(120,120,120);
             background:rgb(250,250,200);            
+        }
+        input[type=text]:invalid{
+            border: 3px solid red;
+            border-radius:0.7rem;
+            background:rgb(250,250,200);
         }
         button[type=submit]{
             width:70px;

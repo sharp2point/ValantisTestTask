@@ -51,33 +51,25 @@ export function closeFilterNotifyAction(nameNotify: string) {
     clearFilter();
 }
 export function closeFilterActionButton() {
-    const filterButtonImg = document.querySelector(".filter-button>img") as HTMLImageElement;
     const filter = document.querySelector(".filter");
     filter.classList.toggle("open-filter");
     clearFilter();
-    filterButtonImg.src = "../filter.webp";
+    //filterButton = "../filter.webp";
 }    
 export function initFilterButton() {
-    const filterButton = document.querySelector(".filter-button");
-    const filterButtonImg = document.querySelector(".filter-button>img") as HTMLImageElement;
+    const filterButton = document.querySelector(".filter-button") as HTMLButtonElement;
     const filter = document.querySelector(".filter");
     let filterState = false;
     filterButton.addEventListener("click", () => {
         if (!filterState) {
-            const res = filter.classList.toggle("open-filter");
-            res ?
-                filterButtonImg.src = "../filter_close.webp"
-                : filterButtonImg.src = "../filter.webp";
+            const res = filter.classList.toggle("open-filter");            
             filterState = res;
-
         } else {
             if (APPSTATE.pageManagerFocused.name === "filter") {
-                clearFilter();
-                filterButtonImg.src = "../filter.webp";
+                clearFilter();                
                 filterState = false;
             } else {
-                filter.classList.toggle("open-filter");
-                filterButtonImg.src = "../filter.webp";
+                filter.classList.toggle("open-filter");                
                 filterState = false;
             }
         }

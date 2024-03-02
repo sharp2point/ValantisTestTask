@@ -1659,7 +1659,6 @@ class Paginator extends HTMLElement {
         this.dom.position = this.root.querySelector(".position");
         this.dom.leftButton = this.root.querySelector(".left-button");
         this.dom.rightButton = this.root.querySelector(".right-button");
-    //this.style.visibility = "hidden";
     }
     connectedCallback() {
         this.pageManager.addPageSubscriber(this.updateContent);
@@ -1683,9 +1682,6 @@ class Paginator extends HTMLElement {
     appendToDOM(parent) {
         parent.appendChild(this);
     }
-    // setEnabled = (isEnable: boolean) => {
-    //     isEnable ? this.style.visibility = "visible" : this.style.visibility = "hidden";
-    // }
     setPageManager = (pageManager)=>{
         this.pageManager = pageManager;
         this.cursor = 0;
@@ -1693,7 +1689,7 @@ class Paginator extends HTMLElement {
     };
     updateContent = (countPage)=>{
         this.pageCount = countPage || this.pageCount;
-        this.dom.position.textContent = `${this.cursor + 1}`; //из ${this.pageCount}
+        this.dom.position.textContent = `${this.cursor + 1}`;
     };
 }
 exports.default = Paginator;
@@ -1707,15 +1703,16 @@ function renderTemplate(position) {
     const css = `
         <style>
             :host {
-                --border-color: rgb(100,100,100);
+                --border-color: rgb(50,50,50);
+                --border-color-focus: rgb(230,60,70);
                 --inaccess-border-color: rgb(150,150,150);
-                --text-color: rgb(100,100,100);
+                --text-color: rgb(10,10,10);
                 display: flex;
                 flex-direction: row;
                 justify-content: center;
                 align-items: center;
                 gap: 0.5rem;
-                background: rgb(250, 250, 250);
+                background: rgba(200, 200, 200,0.9);
                 min-width: 100px;
                 min-height: 30px;
                 border: 3px solid rgb(100, 100, 100);
@@ -1724,7 +1721,7 @@ function renderTemplate(position) {
             }
             .position{
                 color: var(--text-color);
-                font:bold 1.5rem "Arial";
+                font:bold 2rem "Arial";
             }
             .button {
                 width: 40px;
@@ -1753,6 +1750,14 @@ function renderTemplate(position) {
                 border-right: 5px solid var(--border-color);
                 border-top: 5px solid var(--border-color);
                 transform: translate(10px,12px) rotate(45deg);
+            }
+            .right-button:hover::after {
+                border-right: 5px solid var(--border-color-focus);
+                border-top: 5px solid var(--border-color-focus);
+            }
+            .left-button:hover::before {
+                border-left: 5px solid var(--border-color-focus);
+                border-top: 5px solid var(--border-color-focus);
             }
 
             .inaccess::before{
@@ -2344,29 +2349,24 @@ function closeFilterNotifyAction(nameNotify) {
     clearFilter();
 }
 function closeFilterActionButton() {
-    const filterButtonImg = document.querySelector(".filter-button>img");
     const filter = document.querySelector(".filter");
     filter.classList.toggle("open-filter");
     clearFilter();
-    filterButtonImg.src = "../filter.webp";
+//filterButton = "../filter.webp";
 }
 function initFilterButton() {
     const filterButton = document.querySelector(".filter-button");
-    const filterButtonImg = document.querySelector(".filter-button>img");
     const filter = document.querySelector(".filter");
     let filterState = false;
     filterButton.addEventListener("click", ()=>{
         if (!filterState) {
             const res = filter.classList.toggle("open-filter");
-            res ? filterButtonImg.src = "../filter_close.webp" : filterButtonImg.src = "../filter.webp";
             filterState = res;
         } else if ((0, _appstate.APPSTATE).pageManagerFocused.name === "filter") {
             clearFilter();
-            filterButtonImg.src = "../filter.webp";
             filterState = false;
         } else {
             filter.classList.toggle("open-filter");
-            filterButtonImg.src = "../filter.webp";
             filterState = false;
         }
     });
